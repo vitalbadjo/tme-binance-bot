@@ -1,0 +1,17 @@
+node_modules/
+.idea
+*.iml
+.DS_Store
+
+tsconfig.tsbuildinfo
+platforms/
+plugins/
+coverage/
+
+# Build
+build/
+test-reports/
+cypress/screenshots/
+source/locales/_build/
+yarn-error.log
+.env
