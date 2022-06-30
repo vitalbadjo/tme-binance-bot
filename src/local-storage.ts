@@ -11,8 +11,9 @@ export class LocalStorage {
 	}
 
 	public setUser(chatIds: string[]) {
+		console.log("this.users", this.users)
 		chatIds.forEach(chatId => {
-			if (!(chatId in this.users)) {
+			if (!this.users.includes(chatId)) {
 				console.log(`Adding new chat with id: ${chatId}, to local storage`)
 				this.users = [...this.users, chatId]
 			} else {
@@ -41,8 +42,8 @@ export class LocalStorage {
 		// Check if exist in cache
 		ratesFiltered.forEach(el => {
 			// if already in cache
-			if (el.symbol in Object.keys(this.cachedMarketData)) {
-				console.log(`value already ccached: ${el.symbol} - ${el.priceChangePercent}`)
+			if (Object.keys(this.cachedMarketData).includes(el.symbol)) {
+				console.log(`value already cached: ${el.symbol} - ${el.priceChangePercent}`)
 			} else {
 				const newData = {
 					isDelivered: false,

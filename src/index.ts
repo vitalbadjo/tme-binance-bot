@@ -4,7 +4,7 @@ import { LocalStorage } from "./local-storage"
 
 const timer = startPolling()
 
-const storage = new LocalStorage(30)
+const storage = new LocalStorage(3)
 
 const tmeApi = new TelegramBot(getEnv("TLGRM_TKN"), {polling: true})
 // db.authenticate().then(() => console.log("Connected to database")).catch(e => console.log(`DB connections error: ${e}`))
@@ -34,10 +34,14 @@ function startPolling() {
 			if (signals) {
 				if (Object.keys(signals).length) {
 					chats.forEach((chatId) => {
-						const message = Object.keys(signals).map(symbol => {
+						const message = Object.entries(signals).filter(([, data]) => !data.isDelivered).map(([symbol]) => {
 							return `${symbol}: ${signals[symbol].priceChangePercent}%`
 						}).join("\n")
-						tmeApi.sendMessage(chatId, message)
+						tmeApi.sendMessage(chatId, message).then(() => {
+							Object.keys(signals).forEach(s => {
+								storage.setDelivered(s)
+							})
+						})
 					})
 				}
 			}
