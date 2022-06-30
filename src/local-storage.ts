@@ -14,7 +14,7 @@ export class LocalStorage {
 		chatIds.forEach(chatId => {
 			if (!(chatId in this.users)) {
 				console.log(`Adding new chat with id: ${chatId}, to local storage`)
-				this.users.push(chatId)
+				this.users = [...this.users, chatId]
 			} else {
 				console.log(`Chat with id ${chatId} alredy exist`)
 			}
