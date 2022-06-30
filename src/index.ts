@@ -4,7 +4,7 @@ import { LocalStorage } from "./local-storage"
 
 const timer = startPolling()
 
-const storage = new LocalStorage(2)
+let storage = new LocalStorage(2)
 
 const tmeApi = new TelegramBot(getEnv("TLGRM_TKN"), {polling: true})
 // db.authenticate().then(() => console.log("Connected to database")).catch(e => console.log(`DB connections error: ${e}`))
@@ -14,6 +14,9 @@ tmeApi.on("message", async message => {
 		storage.setUser([message.chat.id.toString()])
 		// await User.create({chatId: message.chat.id})
 		return tmeApi.sendMessage(message.chat.id, "Congrats! Your subscription started")
+	}
+	if (message.text?.includes("new")) {
+		storage = new LocalStorage(parseInt(message.text?.slice(3)))
 	}
 	if (message.text === "stop") {
 		clearInterval(timer)
