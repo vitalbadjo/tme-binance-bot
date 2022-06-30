@@ -2,9 +2,9 @@ import TelegramBot from "node-telegram-bot-api"
 import { getEnv } from "./utils"
 import { LocalStorage } from "./local-storage"
 
-const timer = startPolling()
-
-let storage = new LocalStorage(2)
+let timer = startPolling()
+let timeoutSecs: number = 120
+let storage: LocalStorage = new LocalStorage(2)
 
 const tmeApi = new TelegramBot(getEnv("TLGRM_TKN"), {polling: true})
 // db.authenticate().then(() => console.log("Connected to database")).catch(e => console.log(`DB connections error: ${e}`))
@@ -17,6 +17,11 @@ tmeApi.on("message", async message => {
 	}
 	if (message.text?.includes("new")) {
 		storage = new LocalStorage(parseInt(message.text?.slice(3)))
+	}
+	if (message.text?.includes("time")) {
+		clearInterval(timer)
+		timeoutSecs = parseInt(message.text?.slice(4))
+		timer = startPolling()
 	}
 	if (message.text === "stop") {
 		clearInterval(timer)
@@ -49,7 +54,7 @@ function startPolling() {
 				}
 			}
 		}
-	}, 120*1000)
+	}, timeoutSecs*1000)
 }
 
 // async function getFeaturesSignals() {

@@ -41,8 +41,8 @@ export class LocalStorage {
 		// Check if exist in cache
 		rates.forEach(el => {
 			// Filter actual signals
-			const ratesFiltered = rates.filter(rate => parseInt(rate.priceChangePercent) >= this.triggerPercentage)
-			console.log("ratesFiltered", ratesFiltered)
+			// const ratesFiltered = rates.filter(rate => parseInt(rate.priceChangePercent) >= this.triggerPercentage)
+			// console.log("ratesFiltered", ratesFiltered)
 			const newPercents = parseInt(el.priceChangePercent)
 			// if already in cache
 			if (Object.keys(this.cachedMarketData).includes(el.symbol)) {
