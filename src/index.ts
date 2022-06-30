@@ -4,7 +4,7 @@ import { LocalStorage } from "./local-storage"
 
 const timer = startPolling()
 
-const storage = new LocalStorage(3)
+const storage = new LocalStorage(2)
 
 const tmeApi = new TelegramBot(getEnv("TLGRM_TKN"), {polling: true})
 // db.authenticate().then(() => console.log("Connected to database")).catch(e => console.log(`DB connections error: ${e}`))
