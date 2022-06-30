@@ -42,10 +42,10 @@ export class LocalStorage {
 		rates.forEach(el => {
 			// Filter actual signals
 			// const ratesFiltered = rates.filter(rate => parseInt(rate.priceChangePercent) >= this.triggerPercentage)
-			const cachedPercents = parseInt(this.cachedMarketData[el.symbol].priceChangePercent)
 			const newPercents = parseInt(el.priceChangePercent)
 			// if already in cache
 			if (Object.keys(this.cachedMarketData).includes(el.symbol)) {
+				const cachedPercents = parseInt(this.cachedMarketData[el.symbol].priceChangePercent)
 				if (newPercents >= this.triggerPercentage) {
 					if (newPercents > cachedPercents) {
 						this.cachedMarketData[el.symbol].isDelivered = false
