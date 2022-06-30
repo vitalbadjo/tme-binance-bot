@@ -24,6 +24,9 @@ export type GetRatesResponse = {
 	volume: string
 	weightedAvgPrice: string
 }
+
+export type RatesResponseSimple = Pick<GetRatesResponse, "askPrice" | "symbol" | "priceChangePercent" | "priceChange">
+
 export async function getRates(): Promise<GetRatesResponse[]> {
 	const response = await axios.create().get(`${CONFIG.binance.fapiBaseUrl}/fapi/v1/ticker/24hr`)
 	return response.data
