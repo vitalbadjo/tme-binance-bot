@@ -18,9 +18,12 @@
     "start": "yarn build && node ./build/index.js"
   },
   "dependencies": {
+    "@binance/connector": "^1.13.0",
     "@types/node-telegram-bot-api": "^0.57.1",
     "axios": "^0.27.2",
+    "bignumber.js": "^9.1.0",
     "dotenv": "^16.0.1",
+    "firebase": "^9.8.4",
     "node-telegram-bot-api": "^0.57.0",
     "nodemon": "^2.0.16",
     "pg": "^8.7.3",

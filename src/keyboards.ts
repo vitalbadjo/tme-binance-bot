@@ -1,0 +1,23 @@
+import { SendMessageOptions } from "node-telegram-bot-api"
+
+type KeyboardTypes = "digitalKeyboard"
+export const KEYBOARDS: Record<KeyboardTypes, SendMessageOptions> = {
+	digitalKeyboard: {
+		reply_markup: {
+			force_reply: true,
+			// keyboard: [
+			// 	[{text: "1"}, {text: "2"}, {text: "3"}],
+			// 	[],
+			// 	[]
+			// ],
+			// remove_keyboard: true,
+			one_time_keyboard: true
+			// inline_keyboard: [
+			// 	[{text: '1', callback_data: '1'}, {text: '2', callback_data: '2'}, {text: '3', callback_data: '3'}],
+			// 	[{text: '4', callback_data: '4'}, {text: '5', callback_data: '5'}, {text: '6', callback_data: '6'}],
+			// 	[{text: '7', callback_data: '7'}, {text: '8', callback_data: '8'}, {text: '9', callback_data: '9'}],
+			// 	[{text: '0', callback_data: '0'}],
+			// ]
+		}
+	},
+}
