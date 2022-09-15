@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.firestore = exports.db = void 0;
+var tslib_1 = require("tslib");
+var compat_1 = tslib_1.__importDefault(require("firebase/compat"));
+var lite_1 = require("firebase/firestore/lite");
+var initializeApp = compat_1.default.initializeApp;
+exports.db = {};
+var firebaseConfig = {};
+var firebaseController = initializeApp(firebaseConfig);
+exports.firestore = (0, lite_1.getFirestore)(firebaseController);
