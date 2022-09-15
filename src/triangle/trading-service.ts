@@ -562,15 +562,18 @@ export class TradingService {
 
 	getTr(originList: DataWithPrices[], baseAsset: string): TradingServiceResultTriangleSchema[] {
 		const byAsset = getBasePairs(originList, [baseAsset])
-		const triangles = constructTriangles(originList, byAsset[baseAsset], baseAsset)
-		return triangles.map(el => {
-			const calc = this.calculateTriangleProfit(el)
-			return {
+		if (byAsset[baseAsset]) {
+			const triangles = constructTriangles(originList, byAsset[baseAsset], baseAsset)
+			return triangles.map(el => {
+				const calc = this.calculateTriangleProfit(el)
+				return {
 					triangleString: el.map(e => e.symbol).join(""),
 					triangleData: el,
 					predicatedProfit: {string: calc!.profitString, bn: calc!.profit},
 				}
-		}).filter(el => el.predicatedProfit.bn.gt(1))
+			}).filter(el => el.predicatedProfit.bn.gt(1))
+		}
+		return []
 	}
 }
 

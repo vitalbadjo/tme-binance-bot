@@ -12,14 +12,24 @@ import { TradingService } from "./triangle/trading-service"
 
 let timer: NodeJS.Timer = {} as any
 timer = setInterval(async () => {
-	const tradingService = new TradingService(20, false,["USDT"])
+	const tradingService = new TradingService(20, false,["USDT", "USDC", "BUSD", "BNB", "ETH", "BTC"])
 	const data = await tradingService.getDataWithPrices()
-	const result = tradingService.getTr(data, "USDT")
-	console.log("result", result)
+	const resultUsdt = tradingService.getTr(data, "USDT")
+	const resultUSDC = tradingService.getTr(data, "USDC")
+	const resultBNB = tradingService.getTr(data, "BNB")
+	const resultBUSD = tradingService.getTr(data, "BUSD")
+	const resultBTC = tradingService.getTr(data, "BTC")
+	const resultETH = tradingService.getTr(data, "ETH")
 	const fs = require('fs');
-	const resString = result.length ? `${result[0].triangleString} - ${result[0].predicatedProfit.string}\n` : ""
-
-	fs.writeFile('/Users/vitaliyzhalnin/test.txt', resString, { flag: 'a+' }, (err: any) => {
+	const resStringUsdt = resultUsdt.length ? `USDT;${resultUsdt[0].triangleString}; ${resultUsdt[0].predicatedProfit.string};\n` : ""
+	const resStringUsdc = resultUSDC.length ? `USDC;${resultUSDC[0].triangleString}; ${resultUSDC[0].predicatedProfit.string};\n` : ""
+	const resStringBnb = resultBNB.length ? `BNB;${resultBNB[0].triangleString}; ${resultBNB[0].predicatedProfit.string};\n` : ""
+	const resStringBusd = resultBUSD.length ? `BUSD;${resultBUSD[0].triangleString}; ${resultBUSD[0].predicatedProfit.string};\n` : ""
+	const resStringBtc = resultBTC.length ? `BTC;${resultBTC[0].triangleString}; ${resultBTC[0].predicatedProfit.string};\n` : ""
+	const resStringEth = resultETH.length ? `ETH;${resultETH[0].triangleString}; ${resultETH[0].predicatedProfit.string};\n` : ""
+	console.log("result", resStringUsdt+resStringUsdc+resStringBnb+resStringBusd+resStringBtc+resStringEth)
+	fs.writeFile('/root/test.txt', resStringUsdt+resStringUsdc+resStringBnb+resStringBusd+resStringBtc+resStringEth, { flag: 'a+' }, (err: any) => {
+	// fs.writeFile('/Users/vitaliyzhalnin/test.txt', resStringUsdt+resStringUsdc+resStringBnb+resStringBusd+resStringBtc+resStringEth, { flag: 'a+' }, (err: any) => {
 		if (err) {
 			console.error(err);
 		}
