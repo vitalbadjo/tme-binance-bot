@@ -3,7 +3,6 @@ import { CONFIG, CURRENCY_DELIMITER } from "../config"
 import { BnbGetAssetsResponse } from "../triangle/types"
 import { addDelimiter, extractAllCurrencies, removeDelimiter } from "../triangle/utils"
 import { priceData } from "../triangle/fakeData/priceData"
-import { SpotAccountInfo } from "./binance-types"
 const SPOT_REQUEST_PAIRS_LIMIT = 100
 export type GetRatesResponse = {
 	askPrice: string
@@ -96,8 +95,3 @@ export async function getSpotRates(symbols: string[], test: boolean = false): Pr
 }
 
 
-
-export async function getSpotAccountData(): Promise<SpotAccountInfo> {
-	const response = await  axios.create().get(`${CONFIG.binance.apiBaseUrl}/api/v3/account`)
-	return response.data
-}

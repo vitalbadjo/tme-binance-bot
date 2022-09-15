@@ -3,7 +3,7 @@ import { bnbInfoData } from "./fakeData/data"
 import { addDelimiter, extractAllCurrencies, extractUniquePairs } from "./utils"
 import { getSpotRates } from "../apis/binance-api"
 import { calcSingle } from "./calculate-rates"
-import { TradingService } from "./trading-service"
+import { getTwoPairsFromTwoBases, TradingService } from "./trading-service"
 
 it("testing triangle grabber", () => {
 	const triangles = getTriangles(bnbInfoData, undefined, ["UAH"])// , "USDT", ["BTC", "ETH", "BNB", "TUSD"])
@@ -36,13 +36,26 @@ it ("", async () => {
 	const calc = calcSingle([ 'ETH/BTC', 'QTUM/ETH', 'QTUM/BTC' ], fakePrices)
 	console.log("calc", calc.toString())
 })
+
+//APIK=JqJc8toscQL8hTKYdS8jbLbfNLg3m3chNmvgOV7Y9aRcu2QhgUmMNyIisE1FMhPt;APIS=UR4QVa8C0uuAIpbpC56tLpBzToJoUw5fIpqZRtdxf9ouN1gMEISgYKvg9t4CtPNb
 it ("bn", async () => {
 	// const bn = await calculateRates(true)
 	// console.log("bn", bn.filter(el => el.profitPercent.gt(1.5)).sort((a,b) => b.profitPercent.toNumber() - a.profitPercent.toNumber()))
-	const tradingService = new TradingService(30)
+	//@ts-ignore
+
+	const tradingService = new TradingService(30, false,["USDT"])
 	const data = await tradingService.getTrianglesData()
-	console.log("data", data)
-})
+	console.log("data", data[0])
+	// if (data.filter(e => e.triangleData.length === 3)[0].predicatedProfit.bn.gt(3)) {
+	// 	const tradeResult = await tradingService.trade(data.filter(e => e.triangleData.length === 3)[0])//await tradingService.getTrianglesData()
+	// 	console.log("tradeResult", tradeResult)
+	// } else {
+	// 	console.log("no weather")
+	// }
+
+
+	// console.log("data", data)
+}, 100000)
 // it("testpair sort", () => {
 // 	const triangle1: Triangle = [ 'ETH/BTC', 'BTC/USDT', 'ETH/USDT' ]
 // 	const triangle2: Triangle = [ 'ETH/BTC', 'ETH/USDT', 'BTC/USDT' ]
@@ -68,3 +81,33 @@ it ("bn", async () => {
  * 		make object with pair delimited and price
  * 		calculate triangles => object triangle profit percent
  */
+
+test("new triangles function by asset", async () => {
+	const tradingService = new TradingService(30, false,["USDT"])
+	const data = await tradingService.getDataWithPrices()
+	const result = tradingService.getTr(data, "USDT")
+	console.log("result", result)
+	// const itemToTrade = result.sort((a,b) => b.predicatedProfit.bn.toNumber() - a.predicatedProfit.bn.toNumber())[0]
+	// if (itemToTrade.predicatedProfit.bn.gt(2)) {
+	// 	const trade = await tradingService.trade(itemToTrade)
+	// 	console.log("trade", trade)
+	// }
+
+}, 100000)
+test("asdada", () => {
+	const [a,b ] = getTwoPairsFromTwoBases(fake[0], fake[1], "USDT")
+	console.log(a,b)
+})
+
+const fake = [{
+		baseAsset: 'BTC',
+		quoteAsset: 'USDT',
+		symbol: 'BTCUSDT',
+		price: '21423.20000000'
+	},
+	{
+		baseAsset: 'ETH',
+		quoteAsset: 'USDT',
+		symbol: 'ETHUSDT',
+		price: '21423.20000000'
+	}]

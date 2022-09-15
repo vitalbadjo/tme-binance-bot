@@ -2,15 +2,31 @@
 // import { getEnv } from "./utils"
 // import { LocalStorage } from "./local-storage"
 // import { KEYBOARDS } from "./keyboards"
-import { getSpotAssets } from "./apis/binance-api"
-import { getTriangles } from "./triangle"
+// import { getSpotAssets } from "./apis/binance-api"
+// import { getTriangles } from "./triangle"
+import { TradingService } from "./triangle/trading-service"
 
-getSpotAssets().then(e => {
-	console.log("Triangles: ", getTriangles(e))
-})
+// getSpotAssets().then(e => {
+// 	console.log("Triangles: ", getTriangles(e))
+// })
 
+let timer: NodeJS.Timer = {} as any
+timer = setInterval(async () => {
+	const tradingService = new TradingService(20, false,["USDT"])
+	const data = await tradingService.getDataWithPrices()
+	const result = tradingService.getTr(data, "USDT")
+	console.log("result", result)
+	const fs = require('fs');
+	const resString = result.length ? `${result[0].triangleString} - ${result[0].predicatedProfit.string}\n` : ""
 
-// let timer: NodeJS.Timer = {} as any
+	fs.writeFile('/Users/vitaliyzhalnin/test.txt', resString, { flag: 'a+' }, (err: any) => {
+		if (err) {
+			console.error(err);
+		}
+		// file written successfully
+	});
+}, 5*1000)
+console.log(timer)
 // let timeoutSecs: number = 120
 // let storage: LocalStorage = new LocalStorage(2)
 //
