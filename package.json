@@ -15,7 +15,7 @@
     "build": "tsc --project tsconfig-build.json",
     "test": "jest --passWithNoTests",
     "dev": "yarn build && nodemon -r dotenv/config ./src/index.ts",
-    "start": "yarn build && node ./build/index.js"
+    "start": "node ./build/index.js"
   },
   "dependencies": {
     "@binance/connector": "^1.13.0",
