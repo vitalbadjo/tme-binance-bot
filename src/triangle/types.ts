@@ -18,35 +18,35 @@ export type ResponseSymbol = {
 	"isMarginTradingAllowed": boolean,
 	"filters":
 		({
-			"filterType": string,
+			"filterType": "PRICE_FILTER",
 			"minPrice": string,
 			"maxPrice": string,
 			"tickSize": string
 		} |
 			{
-				"filterType": string,
+				"filterType": "PERCENT_PRICE",
 				"multiplierUp": string,
 				"multiplierDown": string,
 				"avgPriceMins": 5
 			} |
 			{
-				"filterType": string,
+				"filterType": "LOT_SIZE",
 				"minQty": string,
 				"maxQty": string,
 				"stepSize": string
 			} |
 			{
-				"filterType": string,
+				"filterType": "MIN_NOTIONAL",
 				"minNotional": string,
 				"applyToMarket": true,
 				"avgPriceMins":number
 			} |
 			{
-				"filterType": string,
+				"filterType": "ICEBERG_PARTS",
 				"limit": number
 			} |
 			{
-				"filterType": string,
+				"filterType": "MARKET_LOT_SIZE",
 				"minQty": string,
 				"maxQty": string,
 				"stepSize": string

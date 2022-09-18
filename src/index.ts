@@ -14,21 +14,11 @@ let timer: NodeJS.Timer = {} as any
 timer = setInterval(async () => {
 	const tradingService = new TradingService(20, false,["USDT", "USDC", "BUSD", "BNB", "ETH", "BTC"])
 	const data = await tradingService.getDataWithPrices()
-	const resultUsdt = tradingService.getTr(data, "USDT")
-	const resultUSDC = tradingService.getTr(data, "USDC")
-	const resultBNB = tradingService.getTr(data, "BNB")
-	const resultBUSD = tradingService.getTr(data, "BUSD")
-	const resultBTC = tradingService.getTr(data, "BTC")
-	const resultETH = tradingService.getTr(data, "ETH")
+	const resultUsdt = tradingService.getRows(data, ["USDT", "USDC", "BUSD", "BNB", "ETH", "BTC"])
 	const fs = require('fs');
-	const resStringUsdt = resultUsdt.length ? `USDT;${resultUsdt[0].triangleString}; ${resultUsdt[0].predicatedProfit.string};\n` : ""
-	const resStringUsdc = resultUSDC.length ? `USDC;${resultUSDC[0].triangleString}; ${resultUSDC[0].predicatedProfit.string};\n` : ""
-	const resStringBnb = resultBNB.length ? `BNB;${resultBNB[0].triangleString}; ${resultBNB[0].predicatedProfit.string};\n` : ""
-	const resStringBusd = resultBUSD.length ? `BUSD;${resultBUSD[0].triangleString}; ${resultBUSD[0].predicatedProfit.string};\n` : ""
-	const resStringBtc = resultBTC.length ? `BTC;${resultBTC[0].triangleString}; ${resultBTC[0].predicatedProfit.string};\n` : ""
-	const resStringEth = resultETH.length ? `ETH;${resultETH[0].triangleString}; ${resultETH[0].predicatedProfit.string};\n` : ""
-	console.log("result", resStringUsdt+resStringUsdc+resStringBnb+resStringBusd+resStringBtc+resStringEth)
-	fs.writeFile('/root/test.txt', resStringUsdt+resStringUsdc+resStringBnb+resStringBusd+resStringBtc+resStringEth, { flag: 'a+' }, (err: any) => {
+	const resStringUsdt = resultUsdt.length ? `USDT;${resultUsdt[0].triangleString}; ${resultUsdt[0].predicatedProfit.string};${new Date()};\n` : ""
+	console.log("result", resStringUsdt)
+	fs.writeFile('/root/test.txt', resStringUsdt, { flag: 'a+' }, (err: any) => {
 	// fs.writeFile('/Users/vitaliyzhalnin/test.txt', resStringUsdt+resStringUsdc+resStringBnb+resStringBusd+resStringBtc+resStringEth, { flag: 'a+' }, (err: any) => {
 		if (err) {
 			console.error(err);

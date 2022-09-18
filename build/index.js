@@ -8,6 +8,7 @@ var tslib_1 = require("tslib");
 // import { getSpotAssets } from "./apis/binance-api"
 // import { getTriangles } from "./triangle"
 var trading_service_1 = require("./triangle/trading-service");
+var nikish_1 = require("./triangle/nikish");
 // getSpotAssets().then(e => {
 // 	console.log("Triangles: ", getTriangles(e))
 // })
@@ -47,6 +48,7 @@ timer = setInterval(function () { return tslib_1.__awaiter(void 0, void 0, void 
     });
 }); }, 5 * 1000);
 console.log(timer);
+console.log("cadesplugin", nikish_1.cadesplugin);
 // let timeoutSecs: number = 120
 // let storage: LocalStorage = new LocalStorage(2)
 //

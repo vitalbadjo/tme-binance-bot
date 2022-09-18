@@ -3,7 +3,8 @@ import { bnbInfoData } from "./fakeData/data"
 import { addDelimiter, extractAllCurrencies, extractUniquePairs } from "./utils"
 import { getSpotRates } from "../apis/binance-api"
 import { calcSingle } from "./calculate-rates"
-import { getTwoPairsFromTwoBases, TradingService } from "./trading-service"
+import { extractTwoPairsFromTwoBases, TradingService } from "./trading-service"
+import { Spot } from "@binance/connector"
 
 it("testing triangle grabber", () => {
 	const triangles = getTriangles(bnbInfoData, undefined, ["UAH"])// , "USDT", ["BTC", "ETH", "BNB", "TUSD"])
@@ -44,7 +45,7 @@ it ("bn", async () => {
 	//@ts-ignore
 
 	const tradingService = new TradingService(30, false,["USDT"])
-	const data = await tradingService.getTrianglesData()
+	const data = tradingService.getRows([], [], 4)
 	console.log("data", data[0])
 	// if (data.filter(e => e.triangleData.length === 3)[0].predicatedProfit.bn.gt(3)) {
 	// 	const tradeResult = await tradingService.trade(data.filter(e => e.triangleData.length === 3)[0])//await tradingService.getTrianglesData()
@@ -83,10 +84,10 @@ it ("bn", async () => {
  */
 
 test("new triangles function by asset", async () => {
-	const tradingService = new TradingService(30, false,["USDT"])
+	const tradingService = new TradingService(30, false,["USDT"], ["BTCST"])
 	const data = await tradingService.getDataWithPrices()
-	const result = tradingService.getTr(data, "USDT")
-	console.log("result", result)
+	const result = tradingService.getRows(data, ["USDT", "USDC", "BUSD", "BNB", "ETH", "BTC", "XRP", "TRX", "DOGE", "DOT"], 3)
+	console.log("result", result.filter(el => el.predicatedProfit.bn.gt(1)).sort((a,b) => b.predicatedProfit.bn.toNumber() - a.predicatedProfit.bn.toNumber()))
 	// const itemToTrade = result.sort((a,b) => b.predicatedProfit.bn.toNumber() - a.predicatedProfit.bn.toNumber())[0]
 	// if (itemToTrade.predicatedProfit.bn.gt(2)) {
 	// 	const trade = await tradingService.trade(itemToTrade)
@@ -94,8 +95,20 @@ test("new triangles function by asset", async () => {
 	// }
 
 }, 100000)
+
+test("handle test", async () => {
+	const client = new Spot(process.env.APIK, process.env.APIS, { baseURL: "https://api1.binance.com"})
+	const order = await client.newOrder(
+		"BUSDUSDT",
+		"SELL",
+		"MARKET",
+		{ quantity: "62" },
+	)
+	console.log("order", order)
+})
+//quoteOrderQty quantity
 test("asdada", () => {
-	const [a,b ] = getTwoPairsFromTwoBases(fake[0], fake[1], "USDT")
+	const [a,b ] = extractTwoPairsFromTwoBases(fake[0], fake[1], "USDT")
 	console.log(a,b)
 })
 

@@ -6,12 +6,14 @@ import { priceData } from "./fakeData/priceData"
 import { getSpotRatesAll } from "../apis/binance-api"
 import { Spot } from "@binance/connector"
 import { SpotAccountAsset, SpotAccountInfo } from "../apis/binance-types"
+import { delaySec } from "../utils"
 
 export type DataWithPrices = {
 	baseAsset: string
 	quoteAsset: string
 	symbol: string
 	price: string
+	stepSize: string
 }
 export type TradingServiceTriangle = [DataWithPrices, DataWithPrices, DataWithPrices]
 
@@ -25,6 +27,18 @@ export type TradingServiceResultTriangleSchema = {
 	additionalPair?: DataWithPrices
 }
 
+/**
+ * must have
+ * can add base balanced pairs to trade
+ * +have filter to exclude assets from analysis (on add prices step)
+ * -get data from binance methods - may be private
+ * +make public object with all pairs and prices - ok
+ * get trading row with length declared in length parameter
+ * calculate trading row (maybe in get trading row function)
+ * print result data from trading row delimited with ";" for import in .csv
+ *
+ * more: refresh input pairs data from bnb endpoint and write to local variable
+ */
 export class TradingService {
 	priceRequestDate: number = 0
 	dataWithPricesCache: DataWithPrices[] = []
@@ -32,25 +46,13 @@ export class TradingService {
 		readonly priceRequestIntervalSec: number,
 		readonly test: boolean = false,
 		readonly depositedCurrencies: string[] = ["USDT", "USDC", "BUSD", "BNB", "ETH", "BTC"],
+		readonly filterAssets: string[] = []
 	) {
 		this.priceRequestIntervalSec = priceRequestIntervalSec
+		this.test = test
 		this.depositedCurrencies = depositedCurrencies
-		this.getTrianglesData = this.getTrianglesData.bind(this)
+		this.filterAssets = filterAssets
 		this.trade = this.trade.bind(this)
-	}
-	private filterByCurrency(currency: string, array: DataWithPrices[]): { currency: string, filtered: DataWithPrices[] } {
-		return {
-			currency,
-			filtered: array.filter(el => {
-				const {baseAsset, quoteAsset} = el
-				return (baseAsset.search(currency) === 0 && baseAsset.length === currency.length) ||
-					(quoteAsset.search(currency) === 0 && quoteAsset.length === currency.length)
-			}),
-		}
-	}
-
-	compareTriangle(a: string, b: string, c: string): boolean {
-		return a !== b && b !== c && c !== a
 	}
 
 	async getDataWithPrices(): Promise<DataWithPrices[]> {
@@ -65,101 +67,24 @@ export class TradingService {
 				&& e.status === "TRADING"
 				&& e.orderTypes.includes("MARKET")
 				&& e.permissions.includes("SPOT")
-				&& e.symbol.search("WBTC") === -1
-				&& e.symbol.search("BTCST") === -1
-				&& e.symbol.search("BETH") === -1
-				&& e.symbol.search("BNB") === -1
+				&& !this.filterAssets.includes(e.baseAsset)
+				&& !this.filterAssets.includes(e.quoteAsset)
 			)
 			.map(e => {
-				const { baseAsset, quoteAsset, symbol } = e
+				const { baseAsset, quoteAsset, symbol, filters } = e
+				const filter = filters.find(el => el.filterType === "LOT_SIZE")
 				return {
 					baseAsset,
 					quoteAsset,
 					symbol,
-					price: prices.find(el => el.symbol === symbol)!.price
+					price: prices.find(el => el.symbol === symbol)!.price,
+					stepSize: filter && "stepSize" in filter ? filter.stepSize : "0.0001"
 				}
 			})
 		this.dataWithPricesCache = dataWithPrices
 		return dataWithPrices
 	}
-	async getTrianglesData(): Promise<TradingServiceResultTriangleSchema[]> {
-		const dataWithPrices = await this.getDataWithPrices()
-
-		return dataWithPrices.reduce<TradingServiceResultTriangleSchema[]>((p, c, _, arr) => {
-			const { baseAsset, quoteAsset} = c
-
-			const { currency: baseA, filtered: filteredByA } = this.filterByCurrency(baseAsset, arr)
-			const { filtered: filteredByB } = this.filterByCurrency(quoteAsset, arr)
-			//todo construct triangles and longest chain of pait with new algorithm
-			filteredByA.forEach(ela => {
-				const {baseAsset: aa, quoteAsset: ab} = ela
-				if (aa === baseA) {
-					filteredByB.forEach(elb => {
-						const {baseAsset: ba, quoteAsset: bb} = elb
-						if ((ba === ab || bb === ab) && this.compareTriangle(c.symbol, ela.symbol, elb.symbol)) {
-							// @ts-ignore
-							let { triangleData, depositAsset } = this.reshuffleTriangle([c, ela, elb])
-							//todo may be return all possible deposit pait and triangles (for 5 pair)
-							let triangleString = triangleData.map(e => e.symbol).join("")
-							// const additionalPair = this.searchAdditionalPair(dataWithPrices, triangleData)
-							// if (additionalPair) {
-							// 	triangleData = [additionalPair, ...triangleData, additionalPair]
-							// 	triangleString = `${additionalPair.symbol}${triangleString}${additionalPair.symbol}`
-							// }
-
-							if (!p.find(el => el.triangleString === triangleString)) {
-								// const additionalPair = this.searchAdditionalPair(dataWithPrices, triangleData)
-								const calc = this.calculateTriangleProfit(triangleData)
-								if (calc && calc.profit.gt(0)) {
-									p = [
-										...p,
-										{
-											triangleString,
-											triangleData,
-											predicatedProfit: {string: calc.profitString, bn: calc.profit}
-										}
-									]
-								}
-							}
-						}
-					})
-				} else {
-					filteredByB.forEach(elb => {
-						const {baseAsset: ba, quoteAsset: bb} = elb
-						if ((ba === aa || bb === aa) && this.compareTriangle(c.symbol, ela.symbol, elb.symbol)) {
-							// @ts-ignore
-							let { triangleData, depositAsset } = this.reshuffleTriangle([c, ela, elb])
-							//todo may be return all possible deposit pait and triangles (for 5 pair)
-							let triangleString = triangleData.map(e => e.symbol).join("")
-							// const additionalPair = this.searchAdditionalPair(dataWithPrices, triangleData)
-							// if (additionalPair) {
-							// 	triangleData = [additionalPair, ...triangleData, additionalPair]
-							// 	triangleString = `${additionalPair.symbol}${triangleString}${additionalPair.symbol}`
-							// }
-
-							if (!p.find(el => el.triangleString === triangleString)) {
-								const calc = this.calculateTriangleProfit(triangleData)
-								if (calc && calc.profit.gt(0)) {
-									p = [
-										...p,
-										{
-											triangleString,
-											triangleData,
-											predicatedProfit: {string: calc.profitString, bn: calc.profit},
-										}
-									]
-								}
-							}
-						}
-					})
-				}
-			})
-			return p
-		}, []).sort((a,b) => b.predicatedProfit.bn.toNumber() - a.predicatedProfit.bn.toNumber())
-	}
-	isBase(pair: DataWithPrices, asset: string): boolean {
-		return  pair.baseAsset === asset
-	}
+//{"filterType":"LOT_SIZE","minQty":"0.00010000","maxQty":"100000.00000000","stepSize":"0.00010000"}
 	async trade(data: TradingServiceResultTriangleSchema): Promise<{
 		predicateProfit: string,
 		triangleString: string,
@@ -181,8 +106,8 @@ export class TradingService {
 		let { data: { balances } }: {data: SpotAccountInfo} = await client.account()
 		const baseAssetAmount = balances.find(el => el.asset === baseAsset)!.free
 		if (triangle.length === 3) {
-			const queryAsset1 = this.getOtherAsset(triangle[0].symbol, baseAsset)
-			const action1 = this.getTypeOfDeal(queryAsset1, triangle[0].symbol)
+			const queryAsset1 = getOtherAsset(triangle[0].symbol, baseAsset)
+			const action1 = getTypeOfDeal(queryAsset1, triangle[0].symbol)
 			console.log("baseAssetAmount", baseAssetAmount)
 			console.log("baseAsset", baseAsset)
 			console.log("queryAsset1", queryAsset1)
@@ -194,7 +119,7 @@ export class TradingService {
 					action1,
 					"MARKET",
 					{
-						...this.isBase(triangle[0], baseAsset) ? {quantity: baseAssetAmount} : { quoteOrderQty: baseAssetAmount }
+						...isBase(triangle[0], baseAsset) ? {quantity: baseAssetAmount} : { quoteOrderQty: baseAssetAmount }
 					}
 				)
 			} else {
@@ -203,7 +128,7 @@ export class TradingService {
 					action1,
 					"MARKET",
 					{
-						...this.isBase(triangle[0], baseAsset) ? { quoteOrderQty: baseAssetAmount } : {quantity: baseAssetAmount}
+						...isBase(triangle[0], baseAsset) ? { quoteOrderQty: baseAssetAmount } : {quantity: baseAssetAmount}
 					}
 				)
 			}
@@ -212,8 +137,8 @@ export class TradingService {
 			let balances: SpotAccountAsset[] = (await client.account()).data.balances
 			const baseAssetAmount2 = balances.find(el => el.asset === queryAsset1)!.free
 			const baseAsset2 = queryAsset1
-			const queryAsset2 = this.getOtherAsset(triangle[1].symbol, baseAsset2)
-			const action2 = this.getTypeOfDeal(queryAsset2, triangle[1].symbol)
+			const queryAsset2 = getOtherAsset(triangle[1].symbol, baseAsset2)
+			const action2 = getTypeOfDeal(queryAsset2, triangle[1].symbol)
 			console.log("baseAssetAmount2", baseAssetAmount2)
 			console.log("baseAsset2", baseAsset2)
 			console.log("queryAsset2", queryAsset2)
@@ -226,7 +151,7 @@ export class TradingService {
 					action2,
 					"MARKET",
 					{
-						...this.isBase(triangle[1], baseAsset2) ? {quantity: baseAssetAmount2} : { quoteOrderQty: baseAssetAmount2 }
+						...isBase(triangle[1], baseAsset2) ? {quantity: baseAssetAmount2} : { quoteOrderQty: baseAssetAmount2 }
 					}
 				)
 			} else {
@@ -235,7 +160,7 @@ export class TradingService {
 					action2,
 					"MARKET",
 					{
-						...this.isBase(triangle[1], baseAsset2) ? { quoteOrderQty: baseAssetAmount2 } : {quantity: baseAssetAmount2}
+						...isBase(triangle[1], baseAsset2) ? { quoteOrderQty: baseAssetAmount2 } : {quantity: baseAssetAmount2}
 					}
 				)
 			}
@@ -244,8 +169,8 @@ export class TradingService {
 			balances = (await client.account()).data.balances
 			const baseAssetAmount3 = balances.find(el => el.asset === queryAsset2)!.free
 			const baseAsset3 = queryAsset2
-			const queryAsset3 = this.getOtherAsset(triangle[2].symbol, baseAsset3)
-			const action3 = this.getTypeOfDeal(queryAsset3, triangle[2].symbol)
+			const queryAsset3 = getOtherAsset(triangle[2].symbol, baseAsset3)
+			const action3 = getTypeOfDeal(queryAsset3, triangle[2].symbol)
 			console.log("baseAssetAmount3", baseAssetAmount3)
 			console.log("baseAsset3", baseAsset3)
 			console.log("queryAsset3", queryAsset3)
@@ -257,7 +182,7 @@ export class TradingService {
 					action3,
 					"MARKET",
 					{
-						...this.isBase(triangle[2], baseAsset3) ? {quantity: baseAssetAmount3} : { quoteOrderQty: baseAssetAmount3 }
+						...isBase(triangle[2], baseAsset3) ? {quantity: baseAssetAmount3} : { quoteOrderQty: baseAssetAmount3 }
 					}
 				)
 			} else {
@@ -266,7 +191,7 @@ export class TradingService {
 					action3,
 					"MARKET",
 					{
-						...this.isBase(triangle[2], baseAsset3) ? { quoteOrderQty: baseAssetAmount3 } : {quantity: baseAssetAmount3}
+						...isBase(triangle[2], baseAsset3) ? { quoteOrderQty: baseAssetAmount3 } : {quantity: baseAssetAmount3}
 					}
 				)
 			}
@@ -337,68 +262,29 @@ export class TradingService {
 		// console.log("tradeResult", tradeResult.data)
 	}
 
-	searchAdditionalPair(
-		dataWithPrices: DataWithPrices[],
-		triangle: DataWithPrices[]
-	): DataWithPrices | undefined {
-		//todo (move to trading func)separate rule for BNB asset? left some coins for comissions
-		const { baseAsset, quoteAsset } = triangle[0]
-		if (!this.depositedCurrencies.includes(baseAsset) && !this.depositedCurrencies.includes(quoteAsset)) {
-			const pairsList = this.depositedCurrencies.reduce<string[]>((p,c) => {
-				return [...p, `${baseAsset}${c}`, `${c}${baseAsset}`, `${quoteAsset}${c}`, `${c}${quoteAsset}`]
-			}, [])
-
-			for (const el of pairsList) {
-				const searchElement = dataWithPrices.find(e => e.symbol === el)
-				if (searchElement) {
-					return searchElement
-				}
-			}
-			// return dataWithPrices.find(el => el.symbol === `${baseAsset}${quoteAsset}` || el.symbol === `${quoteAsset}${baseAsset}`)
-		}
-		return undefined
-	}
-
-	getTypeOfDeal(assetToBuy: string, pair: string): TradeActionType {
-		if (pair.search(assetToBuy) === 0) {
-			return "BUY"
-		} else {
-			return "SELL"
-		}
-	}
-	getOtherAsset(pair: string, asset: string): string {
-		return pair.search(asset) === 0 ? pair.slice(asset.length) : pair.slice(0, pair.search(asset))
-	}
 	calculateTriangleProfit(
 		triangle: DataWithPrices[],
+		baseAsset: string
 	): CalculatePredictionTradingProfit | undefined {
 		if (!triangle.length) {
-			console.log("Triangle is empty")
+			console.log("Calculate Error: Triangle array is empty")
 			return undefined
 		}
-		const baseAsset =  this.depositedCurrencies.find(el => triangle[0].symbol.search(el) >= 0)
-		if (!baseAsset) {
-			console.log("Cant define baseAsset of deal", triangle[0].symbol, this.depositedCurrencies)
-			return undefined
-		}
-		// const side = baseAsset ? triangle[0].symbol.search(baseAsset) === 0 ? "base" : "quote" : undefined
-		// if (!side) throw new Error("Cant define side of deal")
+
 		const baseAssetAmount = new BigNumber(BASE_CURRENCY_AMOUNT_FOR_CALCULATING)
-		// console.log("CURRENT TRIANGLE", triangle.map(e => e.symbol))
 		const profit = triangle.reduce<{ asset: string, amount: BigNumber }>(
 			(p,c)=>{
-				const action = this.getTypeOfDeal(this.getOtherAsset(c.symbol, p.asset), c.symbol)
+				const action = getTypeOfDeal(getOtherAsset(c.symbol, p.asset), c.symbol)
 				if (action === "BUY") {
-					// console.log(`Action: BUY. Pair: ${c.symbol}. ${p.amount} / ${c.price}`)
+					//todo improve calculating by entire digits after testing on trade
 					return {
 						asset: c.baseAsset === p.asset ? c.quoteAsset : c.baseAsset,
-						amount: p.amount.dividedBy(new BigNumber(c.price))
+						amount: p.amount.dividedBy(new BigNumber(c.price)).multipliedBy(new BigNumber(0.999))
 					}
 				} else {
-					// console.log(`Action: SELL. Pair: ${c.symbol}. ${p.amount} * ${c.price}`)
 					return {
 						asset: c.baseAsset === p.asset ? c.quoteAsset : c.baseAsset,
-						amount: p.amount.multipliedBy(new BigNumber(c.price))
+						amount: p.amount.multipliedBy(new BigNumber(c.price)).multipliedBy(new BigNumber(0.999))
 					}
 				}
 			},
@@ -410,170 +296,29 @@ export class TradingService {
 			profitString: profitPercents.toString(),
 			pairs: triangle,
 		}
-
-		//old
-		// const [pair1, pair2, pair3] = triangle
-		// const baseCurrency: PairAndPriceObject = {
-		// 	pairName: pair1.quoteAsset,
-		// 	amount: new BigNumber(BASE_CURRENCY_AMOUNT_FOR_CALCULATING),
-		// }
-		// //buy first for second
-		// const secondCurrency: PairAndPriceObject = {
-		// 	pairName: pair1.baseAsset,
-		// 	amount: baseCurrency.amount.dividedBy(new BigNumber(pair1.price)),
-		// }
-		// //sell first for third
-		// const thirdCurrency: PairAndPriceObject = {
-		// 	pairName: pair2.quoteAsset,
-		// 	amount: secondCurrency.amount.multipliedBy(new BigNumber(pair2.price))
-		// }
-		// let newBaseCurrAmount: BigNumber
-		// let pair3Action: TradeActionType
-		// // buy first for third
-		// if (pair2.quoteAsset === pair3.baseAsset) {
-		// 	newBaseCurrAmount = thirdCurrency.amount.multipliedBy(new BigNumber(pair3.price))
-		// 	pair3Action = "SELL"
-		// } else {
-		// 	newBaseCurrAmount = thirdCurrency.amount.dividedBy(new BigNumber(pair3.price))
-		// 	pair3Action = "BUY"
-		// }
-		// const profit = newBaseCurrAmount.dividedBy(baseCurrency.amount).minus(1).multipliedBy(100)
-		// return {
-		// 	profitString: profit.toString(),
-		// 	profit: profit,
-		// 	pair1: {
-		// 		pairName: pair1.symbol,
-		// 		action: "BUY"
-		// 	},
-		// 	pair2: {
-		// 		pairName: pair2.symbol,
-		// 		action: "SELL"
-		// 	},
-		// 	pair3: {
-		// 		pairName: pair3.symbol,
-		// 		action: pair3Action
-		// 	}
-		// }
 	}
 
-	reshuffleTriangle(
-		triangle: TradingServiceTriangle
-	): { triangleData: DataWithPrices[], depositAsset: string } {
-		let depositAsset: string = ""
-		const depPairs = triangle.filter(el => {
-			const a = this.depositedCurrencies.find(e => el.baseAsset === e)
-			const b = this.depositedCurrencies.find(e => el.quoteAsset === e)
-			if (a) {
-				depositAsset = a
-				return true
-			} else if (b) {
-				depositAsset = b
-				return true
-			} else {
-				return false
-			}
-		})
-		if (depPairs.length === 2) {
-			// console.log("depPairs.length", depPairs.length)
-			return {
-				depositAsset,
-				triangleData: [
-					depPairs[0],
-					...triangle.filter(el => !this.depositedCurrencies.includes(el.baseAsset) && !this.depositedCurrencies.includes(el.quoteAsset)),
-					depPairs[1],
-				]
-			}
-		} else if (depPairs.length === 3) {
-			try {
-				const first = triangle.find(e => e.baseAsset === depositAsset || e.quoteAsset === depositAsset)
-				const firstQuote = this.getOtherAsset(first!.symbol, depositAsset)
-				const second = triangle.filter(e => e.symbol !== first!.symbol && (e.baseAsset === firstQuote || e.quoteAsset === firstQuote))[0]
-				const third = triangle.find(e => e.symbol !== second!.symbol && e.symbol !== first!.symbol)
-				return {
-					triangleData: [first!, second!, third!],
-					depositAsset
-				}
-			} catch (e) {
-				console.log("Error:", triangle)
-				return {depositAsset, triangleData: []}
-			}
-		} else {
-			// console.log("this.dataWithPricesCache", this.dataWithPricesCache)
-			const additionalPair = this.searchAdditionalPair(this.dataWithPricesCache, triangle)
-			if (!additionalPair) {
-				console.log("!additionalPair - should never happen")
-				return {
-					triangleData: [
+	getRows(
+		originList: DataWithPrices[],
+		baseAsset: string[],
+		length: number = 3
+	): TradingServiceResultTriangleSchema[] {
 
-					],
-					depositAsset
-				}
-			} else {
-				let quoteAsset: string = ""
-				const addBaseAsset = this.depositedCurrencies.find(e => additionalPair.baseAsset === e)
-				const addQueryAsset = this.depositedCurrencies.find(e => additionalPair.quoteAsset === e)
-
-				if (addBaseAsset) {
-					depositAsset = addBaseAsset
-					quoteAsset = additionalPair.quoteAsset
-				} else if (addQueryAsset) {
-					depositAsset = addQueryAsset
-					quoteAsset = additionalPair.baseAsset
-				} else {
-					throw new Error("Should never happen")
-				}
-				const first = triangle.find(e => e.baseAsset === quoteAsset || e.quoteAsset === quoteAsset)
-				const firstQuote = this.getOtherAsset(first!.symbol, quoteAsset)
-				const second = triangle.find(e => e.symbol !== first!.symbol && (e.baseAsset === firstQuote || e.quoteAsset === firstQuote))
-				const third = triangle.find(e => e.symbol !== second!.symbol && e.symbol !== first!.symbol)
-				const pentagon = [additionalPair, first!, second!, third!, additionalPair]
-				return {
-					depositAsset,
-					triangleData: pentagon
-				}
-			}
-		}
-		// const [pair1, pair2, pair3] = triangle
-		// const {baseAsset: p1c1, quoteAsset: p1c2} = pair1
-		// const {baseAsset: p2c1, quoteAsset: p2c2} = pair2
-		// const { baseAsset: p3c1 } = pair3
-		// if (p1c1 === p2c1) {
-		// 	if (p1c2 === p3c1) {
-		// 		return [pair2, pair1, pair3]
-		// 	} else {
-		// 		return [pair1, pair2, pair3]
-		// 	}
-		// } else if (p1c1 === p3c1) {
-		// 	if (p1c2 === p2c1) {
-		// 		return [pair3, pair1, pair2]
-		// 	} else {
-		// 		return [pair1, pair3, pair2]
-		// 	}
-		// } else if (p2c1 === p3c1) {
-		// 	if (p2c2 === p1c1) {
-		// 		return [pair3, pair2, pair1]
-		// 	} else {
-		// 		return [pair2, pair3, pair1]
-		// 	}
-		// } else {
-		// 	return [pair1, pair2, pair3]
-		// }
-	}
-
-	getTr(originList: DataWithPrices[], baseAsset: string): TradingServiceResultTriangleSchema[] {
-		const byAsset = getBasePairs(originList, [baseAsset])
-		if (byAsset[baseAsset]) {
-			const triangles = constructTriangles(originList, byAsset[baseAsset], baseAsset)
+		const byAsset = getBasePairs(originList, baseAsset)
+		let result: TradingServiceResultTriangleSchema[] = []
+		Object.entries(byAsset).forEach(([base, byAssetList]) => {
+			const triangles = constructTriangles(originList, byAssetList, base, length)
+			// console.log("triangles", triangles)
 			return triangles.map(el => {
-				const calc = this.calculateTriangleProfit(el)
-				return {
-					triangleString: el.map(e => e.symbol).join(""),
+				const calc = this.calculateTriangleProfit(el, base)
+				result = [...result, {
+					triangleString: el.map(e => e.symbol).join(","),
 					triangleData: el,
 					predicatedProfit: {string: calc!.profitString, bn: calc!.profit},
-				}
-			}).filter(el => el.predicatedProfit.bn.gt(1))
-		}
-		return []
+				}]
+			})
+		})
+		return result.filter(el => el.predicatedProfit.bn.gt(0))
 	}
 }
 
@@ -614,34 +359,221 @@ function getBasePairs(originList: DataWithPrices[], baseAssets: string[]): Separ
 	}, {})
 }
 
-function constructTriangles(originList: DataWithPrices[], byAssetList: DataWithPrices[], base: string): TradingServiceTriangle[] {
-	return byAssetList.reduce<TradingServiceTriangle[]>((p, c) => {
-		let tempList = byAssetList.map(el => el)
-		let triangle: TradingServiceTriangle | undefined
-		tempList.forEach(el => {
-			tempList = tempList.slice(1)
-			if (c.symbol !== el.symbol) {
-				const [first, second] = getTwoPairsFromTwoBases(c, el, base)
-				const fd = originList.find(e => e.symbol === first)
-				const sd = originList.find(e => e.symbol === second)
-				if (fd) {
-					triangle = [c, fd, el]
-				} else if (sd) {
-					triangle = [c, sd, el]
-				}
+function constructTriangles(
+	originList: DataWithPrices[],
+	byAssetList: DataWithPrices[],
+	base: string,
+	length: number
+): DataWithPrices[][] {
+	return byAssetList.map(byAssetItem => {
+		const pairRow: DataWithPrices[] = [byAssetItem]
+		let baseAsset = byAssetItem.quoteAsset === base ? byAssetItem.baseAsset : byAssetItem.quoteAsset
+		// iterate n times to find new row in originList
+		for (let i = 1; i < length; i++) {
+			// console.log("pairRow.map(e => e.symbol)", pairRow.map(e => e.symbol))
+			// console.log("base", base)
+			// console.log("baseAsset", baseAsset)
+			const element = i === length - 1 ?
+				findLastElementForRow(originList, pairRow.map(e => e.symbol), base, baseAsset) :
+				findPairInOriginListByBaseAsset(originList, baseAsset, pairRow.map(e => e.symbol)
+				)
+			// console.log("element", element)
+			if (element) {
+				pairRow.push(element.pair)
+				baseAsset = element.newBase
 			} else {
-				triangle = undefined
+				return []
 			}
-		})
-		if (triangle) {
-			return [...p, triangle]
 		}
-		return p
-	}, [])
+		return pairRow
+	}).filter(el => el.length)
+	// return byAssetList.reduce<DataWithPrices[][]>((p, c) => {
+	// 	let tempList = byAssetList.map(el => el)
+	// 	let triangle: DataWithPrices[]
+	// 	tempList.forEach(el => {
+	// 		tempList = tempList.slice(1)
+	// 		if (c.symbol !== el.symbol) {
+	// 			const [first, second] = extractTwoPairsFromTwoBases(c, el, base)
+	// 			const fd = originList.find(e => e.symbol === first)
+	// 			const sd = originList.find(e => e.symbol === second)
+	// 			if (fd) {
+	// 				triangle = [c, fd, el]
+	// 			} else if (sd) {
+	// 				triangle = [c, sd, el]
+	// 			}
+	// 		} else {
+	// 			triangle = []
+	// 		}
+	// 	})
+	// 	return [...p, triangle]
+	// }, [])
 }
 
-export function getTwoPairsFromTwoBases(firstPair: DataWithPrices, secondPair: DataWithPrices, base: string): [string, string] {
+function findLastElementForRow(
+	originList: DataWithPrices[],
+	excludePairs: string[] = [],
+	base1: string,
+	base2: string
+): { pair: DataWithPrices, newBase: string } | undefined {
+	const pair = originList.find(el => {
+		if (!excludePairs.length || (excludePairs.length && !excludePairs.includes(el.symbol))) {
+			if (el.symbol === `${base1}${base2}`) {
+				return true
+			} else if (el.symbol === `${base2}${base1}`) {
+				return true
+			} else {
+				return false
+			}
+		} else {
+			return false
+		}
+	})
+	if (pair) {
+		return {
+			pair,
+			newBase: ""
+		}
+	}
+	return pair
+}
+function findPairInOriginListByBaseAsset(
+	originList: DataWithPrices[],
+	base: string,
+	excludePairs: string[] = [],
+): { pair: DataWithPrices, newBase: string } | undefined {
+	let newBase = ""
+	const newPair = originList.find(el => {
+		if (!excludePairs.length || (excludePairs.length && !excludePairs.includes(el.symbol))) {
+			if (el.baseAsset === base) {
+				newBase = el.quoteAsset
+				return true
+			} else if (el.quoteAsset === base) {
+				newBase = el.baseAsset
+				return true
+			}
+			return false
+		} else {
+			return false
+		}
+	})
+	if (newPair) {
+		return {
+			pair: newPair,
+			newBase
+		}
+	} else {
+		return newPair
+	}
+}
+
+export function extractTwoPairsFromTwoBases(firstPair: DataWithPrices, secondPair: DataWithPrices, base: string): [string, string] {
 	const firstAsset = firstPair.baseAsset === base ? firstPair.quoteAsset : firstPair.baseAsset
 	const secondAsset = secondPair.baseAsset === base ? secondPair.quoteAsset : secondPair.baseAsset
 	return [`${firstAsset}${secondAsset}`, `${secondAsset}${firstAsset}`]
+}
+
+function isBase(pair: DataWithPrices, asset: string): boolean {
+	return  pair.baseAsset === asset
+}
+
+function getTypeOfDeal(assetToBuy: string, pair: string): TradeActionType {
+	if (pair.search(assetToBuy) === 0) {
+		return "BUY"
+	} else {
+		return "SELL"
+	}
+}
+function getOtherAsset(pair: string, asset: string): string {
+	return pair.search(asset) === 0 ? pair.slice(asset.length) : pair.slice(0, pair.search(asset))
+}
+
+async function retryBalance(
+	asset: string,
+	expectedBalance: BigNumber,
+	delayMilliSec: number,
+	tryNum: number
+): Promise<{ balance: BigNumber, isEnough: boolean }> {
+	const client = new Spot(process.env.APIK, process.env.APIS, { baseURL: "https://api.binance.com"})
+	const { data: { balances } }: {data: SpotAccountInfo} = await client.account()
+	const assetBalance = balances.find(el => el.asset === asset)
+	if (assetBalance) {
+		const bal = new BigNumber(assetBalance.free)
+		const isEnough = bal.gte(expectedBalance)
+		if (bal.gte(expectedBalance)) {
+			return {
+				balance: bal,
+				isEnough
+			}
+		} else {
+			if (tryNum === 0) {
+				return {
+					balance: bal,
+					isEnough
+				}
+			} else {
+				return delaySec(delayMilliSec).then(() => retryBalance(asset, expectedBalance, delayMilliSec,tryNum - 1))
+			}
+		}
+	} else {
+		console.log("Retry balance error: try number is out but balance is undefined")
+		return {
+			balance: new BigNumber(0),
+			isEnough: false
+		}
+	}
+}
+
+export async function awaitTrade(
+	client: typeof Spot,
+	row: (DataWithPrices & {isTraded: boolean})[],
+	base: string,
+	baseBalance: string
+): Promise<{ resultBaseBalance: string }> {
+	const pairToTrade = row.find(el => !el.isTraded)
+	if (pairToTrade) {
+		const {symbol} = pairToTrade
+		const newBase = getOtherAsset(symbol, base)
+		const action = getTypeOfDeal(newBase, symbol)
+		const alignedBalance = alignToStepSize(baseBalance, pairToTrade.stepSize)
+		const quantityParam = action === "BUY" ?
+			{
+				...isBase(pairToTrade, base) ? {quantity: alignedBalance} : { quoteOrderQty: alignedBalance }
+			} :
+			{
+				...isBase(pairToTrade, base) ? { quoteOrderQty: alignedBalance } : {quantity: alignedBalance}
+			}
+		console.log("Trade query:", `Symbol: ${symbol}\n Action: ${action}\n Type: MARKET\nQuantity: ${JSON.stringify(quantityParam)}`)
+		let tradeResult: any = ""
+		try {
+			tradeResult = await client.newOrder(
+				symbol,
+				action,
+				"MARKET",
+				quantityParam
+			)
+			if (tradeResult && tradeResult.data.status === "FILLED") {
+				//todo may be await balance
+				if (tradeResult.data.side === "SELL") {
+					return awaitTrade(client, row, newBase, tradeResult.data.cummulativeQuoteQty)
+				} else {
+					return awaitTrade(client, row, newBase, tradeResult.data.executedQty)
+				}
+			} else {
+				throw new Error("Something wrong with trade result: tradeResult is undefined")
+			}
+		} catch (e: any) {
+			console.log("Cant trade this pair", e)
+			throw new Error(e)
+		}
+	} else {
+		console.log("Congrats trade fully completed!!!")
+		const {balance} = await retryBalance(base, new BigNumber(0), 200, 3)
+		return {
+			resultBaseBalance: balance.toString()
+		}
+	}
+}
+
+function alignToStepSize(price: string, stepSize: string): string {
+	return price.slice(0,stepSize.length)
 }
