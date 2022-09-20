@@ -1,6 +1,18 @@
-import { TradingService } from "./trading-service"
+import { alignToStepSize, TradingService } from "./trading-service"
 import { Spot } from "@binance/connector"
 
+
+it("test delimiter", () => {
+	const data2 = "1234.03141"
+	const limiter1 = "1.00"
+	const limiter2 = "1"
+	const limiter3 = "0.1"
+	const limiter4 = "0.0000001"
+	console.log(alignToStepSize(data2, limiter1))
+	console.log(alignToStepSize(data2, limiter2))
+	console.log(alignToStepSize(data2, limiter3))
+	console.log(alignToStepSize(data2, limiter4))
+})
 //APIK=JqJc8toscQL8hTKYdS8jbLbfNLg3m3chNmvgOV7Y9aRcu2QhgUmMNyIisE1FMhPt;APIS=UR4QVa8C0uuAIpbpC56tLpBzToJoUw5fIpqZRtdxf9ouN1gMEISgYKvg9t4CtPNb
 it ("bn", async () => {
 
@@ -36,23 +48,29 @@ test("new triangles function by asset", async () => {
 test("handle trade test", async () => {
 	const client = new Spot(process.env.APIK, process.env.APIS, { baseURL: "https://api1.binance.com"})
 	const order = await client.newOrder(
-		"BUSDUSDT",
-		"SELL",
+		"BTCBUSD",
+		"BUY",
 		"MARKET",
-		{ quantity: "62" },
+		{ quoteOrderQty: "18" },
 	)
-	console.log("order", order)
+	console.log("order", order.data)
 })
+//3846
 //quoteOrderQty quantity
 
 test("New test trade", async () => {
-	const service = new TradingService(1000, false, ["USDT", "USDC", "BUSD", "BNB", "ETH", "BTC"], ["BTCST"])
+	const service = new TradingService(1000, false, ["USDT", "BUSD", "ETH", "BTC"], ["BTCST", "TCT"])
 	const data = await service.getDataWithPrices()
 	const row = service.getRows(data, 3)
-		.filter(el => el.predicatedProfit.bn.gte(1))
+		.filter(el => el.predicatedProfit.bn.gte(5))
 		.sort((a,b) => b.predicatedProfit.bn.toNumber() - a.predicatedProfit.bn.toNumber())[0]
 
-	const result = await service.trade(row)
-	console.log("result", result)
-})
+	if (row) {
+		const result = await service.trade(row, false)
+		console.log("result", result)
+	} else {
+		console.log("No weather to trade")
+	}
+
+}, 1000000)
 

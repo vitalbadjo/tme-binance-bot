@@ -59,20 +59,22 @@ export class TradingService {
 			)
 			.map(e => {
 				const { baseAsset, quoteAsset, symbol, filters } = e
-				const filter = filters.find(el => el.filterType === "LOT_SIZE")
+				const filterBase = filters.find(el => el.filterType === "LOT_SIZE")
+				const filterQuote = filters.find(el => el.filterType === "PRICE_FILTER")
 				return {
 					baseAsset,
 					quoteAsset,
 					symbol,
 					price: prices.find(el => el.symbol === symbol)!.price,
-					stepSize: filter && "stepSize" in filter ? filter.stepSize : "0.0001"
+					stepSizeQuote: filterQuote && "minPrice" in filterQuote ? filterQuote.minPrice : "0.00000001",
+					stepSizeBase: filterBase && "minQty" in filterBase ? filterBase.minQty : "1"
 				}
 			})
 		this.dataWithPricesCache = dataWithPrices
 		return dataWithPrices
 	}
 //{"filterType":"LOT_SIZE","minQty":"0.00010000","maxQty":"100000.00000000","stepSize":"0.00010000"}
-	async trade(data: TradingServiceResultTriangleSchema): Promise<{
+	async trade(data: TradingServiceResultTriangleSchema, test: boolean = false): Promise<{
 		predicateProfit: string,
 		triangleString: string,
 		realProfit: string
@@ -88,10 +90,17 @@ export class TradingService {
 			return {predicateProfit: predicatedProfit.string, triangleString, realProfit: "not run"}
 		}
 
-		const client = new Spot(process.env.APIK, process.env.APIS, { baseURL: "https://api1.binance.com"})
+		const client = new Spot(process.env.APIK, process.env.APIS, { baseURL: "https://api.binance.com"})
 		const baseAssetAmount = await retryBalance(baseAsset, new BigNumber(0), 300, 3)
 		console.log("retry base asset (depo) ammount: ", baseAssetAmount)
-		const result = await awaitTrade(client, triangle.map(el => ({...el, isTraded: false})), baseAsset, baseAssetAmount.balance.toString(), 100)
+		const result = await awaitTrade(
+			client,
+			triangle.map(el => ({...el, isTraded: false})),
+			baseAsset,
+			baseAssetAmount.balance.toString(),
+			1400,
+			test
+		)
 		console.log("awaitTrade result: ", result)
 		return {
 			predicateProfit: predicatedProfit.string,
@@ -262,9 +271,9 @@ function findPairInOriginListByBaseAsset(
 	}
 }
 
-function isBase(pair: DataWithPrices, asset: string): boolean {
-	return  pair.baseAsset === asset
-}
+// function isBase(pair: DataWithPrices, asset: string): boolean {
+// 	return  pair.baseAsset === asset
+// }
 
 function getTypeOfDeal(assetToBuy: string, pair: string): TradeActionType {
 	if (pair.search(assetToBuy) === 0) {
@@ -318,31 +327,32 @@ async function awaitTrade(
 	row: (DataWithPrices & {isTraded: boolean})[],
 	base: string,
 	baseBalance: string,
-	delayBetweenTrades: number
+	delayBetweenTrades: number,
+	test: boolean
 ): Promise<{ resultBaseBalance: string }> {
 	const pairToTrade = row.find(el => !el.isTraded)
-	if (pairToTrade) {
+	const pairToTradeIndex = row.findIndex(el => !el.isTraded)
+	if (pairToTrade && pairToTradeIndex >= 0) {
 		const {symbol} = pairToTrade
 		const newBase = getOtherAsset(symbol, base)
 		const action = getTypeOfDeal(newBase, symbol)
-		const alignedBalance = alignToStepSize(baseBalance, pairToTrade.stepSize)
 		const quantityParam = action === "BUY" ?
-			{
-				...isBase(pairToTrade, base) ? {quantity: alignedBalance} : { quoteOrderQty: alignedBalance }
-			} :
-			{
-				...isBase(pairToTrade, base) ? { quoteOrderQty: alignedBalance } : {quantity: alignedBalance}
-			}
+			{ quoteOrderQty: alignToStepSize(baseBalance, pairToTrade.stepSizeQuote) } :
+			{ quantity: alignToStepSize(baseBalance, pairToTrade.stepSizeBase) }
 		console.log("Trade query:", `Symbol: ${symbol}\n Action: ${action}\n Type: MARKET\nQuantity: ${JSON.stringify(quantityParam)}`)
 		let tradeResult: any = ""
 		try {
-			tradeResult = await client.newOrder(
-				symbol,
-				action,
-				"MARKET",
-				quantityParam
-			)
+			if (!test) {
+				tradeResult = await client.newOrder(
+					symbol,
+					action,
+					"MARKET",
+					quantityParam
+				)
+			}
+			row[pairToTradeIndex] = {...pairToTrade, isTraded: true}
 			if (tradeResult && tradeResult.data.status === "FILLED") {
+				console.log("tradeResult.data", tradeResult.data)
 				if (delayBetweenTrades) {
 					await delaySec(delayBetweenTrades)
 				}
@@ -352,7 +362,8 @@ async function awaitTrade(
 					row,
 					newBase,
 					tradeResult.data.side === "SELL" ? tradeResult.data.cummulativeQuoteQty : tradeResult.data.executedQty,
-					delayBetweenTrades
+					delayBetweenTrades,
+					test
 				)
 			} else {
 				throw new Error("Something wrong with trade result: tradeResult is undefined")
@@ -370,6 +381,15 @@ async function awaitTrade(
 	}
 }
 
-function alignToStepSize(price: string, stepSize: string): string {
-	return price.slice(0,stepSize.length)
+export function alignToStepSize(price: string, stepSize: string): string {
+	const [priceInt, priceDecimal] = price.split(".")
+	if (stepSize.includes(".")) {
+		const [int, decimal] = stepSize.split(".")
+		if (int.search("1") >= 0) {
+			return priceInt
+		}
+		return `${priceInt}.${priceDecimal.slice(0,decimal.search("1")+1)}`
+	} else {
+		return priceInt
+	}
 }

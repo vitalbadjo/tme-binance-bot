@@ -101,7 +101,8 @@ export type DataWithPrices = {
 	quoteAsset: string
 	symbol: string
 	price: string
-	stepSize: string
+	stepSizeQuote: string
+	stepSizeBase: string
 }
 export type TradingServiceResultTriangleSchema = {
 	triangleString: string

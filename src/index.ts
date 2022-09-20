@@ -12,19 +12,37 @@ import { TradingService } from "./triangle/trading-service"
 
 let timer: NodeJS.Timer = {} as any
 timer = setInterval(async () => {
-	const tradingService = new TradingService(20, false,["USDT", "USDC", "BUSD", "BNB", "ETH", "BTC"])
-	const data = await tradingService.getDataWithPrices()
-	const resultUsdt = tradingService.getRows(data, ["USDT", "USDC", "BUSD", "BNB", "ETH", "BTC"])
-	const fs = require('fs');
-	const resStringUsdt = resultUsdt.length ? `USDT;${resultUsdt[0].triangleString}; ${resultUsdt[0].predicatedProfit.string};${new Date()};\n` : ""
-	console.log("result", resStringUsdt)
-	fs.writeFile('/root/test.txt', resStringUsdt, { flag: 'a+' }, (err: any) => {
-	// fs.writeFile('/Users/vitaliyzhalnin/test.txt', resStringUsdt+resStringUsdc+resStringBnb+resStringBusd+resStringBtc+resStringEth, { flag: 'a+' }, (err: any) => {
-		if (err) {
-			console.error(err);
-		}
-		// file written successfully
-	});
+	const service = new TradingService(20, false, ["USDT", "BUSD", "ETH", "BTC"], ["BTCST", "TCT"])
+	const data = await service.getDataWithPrices()
+	const row = service.getRows(data, 3)
+		.filter(el => el.predicatedProfit.bn.gte(5))
+		.sort((a,b) => b.predicatedProfit.bn.toNumber() - a.predicatedProfit.bn.toNumber())[0]
+
+	if (row) {
+		const fs = require('fs');
+		const resString = row ? `${row.triangleString}; ${row.predicatedProfit.string};${new Date()};\n` : ""
+		console.log("result", resString)
+		fs.writeFile('/root/test.txt', resString, { flag: 'a+' }, (err: any) => {
+			// fs.writeFile('/Users/vitaliyzhalnin/test.txt', resStringUsdt+resStringUsdc+resStringBnb+resStringBusd+resStringBtc+resStringEth, { flag: 'a+' }, (err: any) => {
+			if (err) {
+				console.error(err);
+			}
+			// file written successfully
+		})
+		const result = await service.trade(row, false)
+		fs.writeFile('/root/trade.txt', `${row.triangleString}; ${row.predicatedProfit.string};${new Date()};${result.realProfit}\n`, { flag: 'a+' }, (err: any) => {
+			if (err) {
+				console.error(err);
+			}
+			// file written successfully
+		})
+		console.log("result", result)
+	} else {
+		console.log("No weather to trade")
+	}
+
+
+
 }, 5*1000)
 console.log(timer)
 // let timeoutSecs: number = 120
