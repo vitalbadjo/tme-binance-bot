@@ -8,47 +8,52 @@ var tslib_1 = require("tslib");
 // import { getSpotAssets } from "./apis/binance-api"
 // import { getTriangles } from "./triangle"
 var trading_service_1 = require("./triangle/trading-service");
-var nikish_1 = require("./triangle/nikish");
 // getSpotAssets().then(e => {
 // 	console.log("Triangles: ", getTriangles(e))
 // })
 var timer = {};
 timer = setInterval(function () { return tslib_1.__awaiter(void 0, void 0, void 0, function () {
-    var tradingService, data, resultUsdt, resultUSDC, resultBNB, resultBUSD, resultBTC, resultETH, fs, resStringUsdt, resStringUsdc, resStringBnb, resStringBusd, resStringBtc, resStringEth;
+    var service, data, row, fs, resString, result;
     return tslib_1.__generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                tradingService = new trading_service_1.TradingService(20, false, ["USDT", "USDC", "BUSD", "BNB", "ETH", "BTC"]);
-                return [4 /*yield*/, tradingService.getDataWithPrices()];
+                service = new trading_service_1.TradingService(20, false, ["USDT", "BUSD", "ETH", "BTC"], ["BTCST", "TCT"]);
+                return [4 /*yield*/, service.getDataWithPrices()];
             case 1:
                 data = _a.sent();
-                resultUsdt = tradingService.getTr(data, "USDT");
-                resultUSDC = tradingService.getTr(data, "USDC");
-                resultBNB = tradingService.getTr(data, "BNB");
-                resultBUSD = tradingService.getTr(data, "BUSD");
-                resultBTC = tradingService.getTr(data, "BTC");
-                resultETH = tradingService.getTr(data, "ETH");
+                row = service.getRows(data, 3)
+                    .filter(function (el) { return el.predicatedProfit.bn.gte(5); })
+                    .sort(function (a, b) { return b.predicatedProfit.bn.toNumber() - a.predicatedProfit.bn.toNumber(); })[0];
+                if (!row) return [3 /*break*/, 3];
                 fs = require('fs');
-                resStringUsdt = resultUsdt.length ? "USDT;".concat(resultUsdt[0].triangleString, "; ").concat(resultUsdt[0].predicatedProfit.string, ";\n") : "";
-                resStringUsdc = resultUSDC.length ? "USDC;".concat(resultUSDC[0].triangleString, "; ").concat(resultUSDC[0].predicatedProfit.string, ";\n") : "";
-                resStringBnb = resultBNB.length ? "BNB;".concat(resultBNB[0].triangleString, "; ").concat(resultBNB[0].predicatedProfit.string, ";\n") : "";
-                resStringBusd = resultBUSD.length ? "BUSD;".concat(resultBUSD[0].triangleString, "; ").concat(resultBUSD[0].predicatedProfit.string, ";\n") : "";
-                resStringBtc = resultBTC.length ? "BTC;".concat(resultBTC[0].triangleString, "; ").concat(resultBTC[0].predicatedProfit.string, ";\n") : "";
-                resStringEth = resultETH.length ? "ETH;".concat(resultETH[0].triangleString, "; ").concat(resultETH[0].predicatedProfit.string, ";\n") : "";
-                console.log("result", resStringUsdt + resStringUsdc + resStringBnb + resStringBusd + resStringBtc + resStringEth);
-                fs.writeFile('/root/test.txt', resStringUsdt + resStringUsdc + resStringBnb + resStringBusd + resStringBtc + resStringEth, { flag: 'a+' }, function (err) {
+                resString = row ? "".concat(row.triangleString, "; ").concat(row.predicatedProfit.string, ";").concat(new Date(), ";\n") : "";
+                console.log("result", resString);
+                fs.writeFile('/root/test.txt', resString, { flag: 'a+' }, function (err) {
                     // fs.writeFile('/Users/vitaliyzhalnin/test.txt', resStringUsdt+resStringUsdc+resStringBnb+resStringBusd+resStringBtc+resStringEth, { flag: 'a+' }, (err: any) => {
                     if (err) {
                         console.error(err);
                     }
                     // file written successfully
                 });
-                return [2 /*return*/];
+                return [4 /*yield*/, service.trade(row, false)];
+            case 2:
+                result = _a.sent();
+                fs.writeFile('/root/trade.txt', "".concat(row.triangleString, "; ").concat(row.predicatedProfit.string, ";").concat(new Date(), ";").concat(result.realProfit, "\n"), { flag: 'a+' }, function (err) {
+                    if (err) {
+                        console.error(err);
+                    }
+                    // file written successfully
+                });
+                console.log("result", result);
+                return [3 /*break*/, 4];
+            case 3:
+                console.log("No weather to trade");
+                _a.label = 4;
+            case 4: return [2 /*return*/];
         }
     });
 }); }, 5 * 1000);
 console.log(timer);
-console.log("cadesplugin", nikish_1.cadesplugin);
 // let timeoutSecs: number = 120
 // let storage: LocalStorage = new LocalStorage(2)
 //

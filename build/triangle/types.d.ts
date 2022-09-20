@@ -1,3 +1,4 @@
+import BigNumber from "bignumber.js";
 export declare type ResponseSymbol = {
     "symbol": string;
     "status": string;
@@ -17,30 +18,30 @@ export declare type ResponseSymbol = {
     "isSpotTradingAllowed": boolean;
     "isMarginTradingAllowed": boolean;
     "filters": ({
-        "filterType": string;
+        "filterType": "PRICE_FILTER";
         "minPrice": string;
         "maxPrice": string;
         "tickSize": string;
     } | {
-        "filterType": string;
+        "filterType": "PERCENT_PRICE";
         "multiplierUp": string;
         "multiplierDown": string;
         "avgPriceMins": 5;
     } | {
-        "filterType": string;
+        "filterType": "LOT_SIZE";
         "minQty": string;
         "maxQty": string;
         "stepSize": string;
     } | {
-        "filterType": string;
+        "filterType": "MIN_NOTIONAL";
         "minNotional": string;
         "applyToMarket": true;
         "avgPriceMins": number;
     } | {
-        "filterType": string;
+        "filterType": "ICEBERG_PARTS";
         "limit": number;
     } | {
-        "filterType": string;
+        "filterType": "MARKET_LOT_SIZE";
         "minQty": string;
         "maxQty": string;
         "stepSize": string;
@@ -82,3 +83,38 @@ export declare type CalculatedRate = {
     triangle: Triangle;
     profit: string;
 };
+export declare type TradeActionType = "BUY" | "SELL";
+export declare type DataWithPrices = {
+    baseAsset: string;
+    quoteAsset: string;
+    symbol: string;
+    price: string;
+    stepSizeQuote: string;
+    stepSizeBase: string;
+};
+export declare type TradingServiceResultTriangleSchema = {
+    triangleString: string;
+    triangleData: DataWithPrices[];
+    predicatedProfit: {
+        string: string;
+        bn: BigNumber;
+    };
+    additionalPair?: DataWithPrices;
+};
+declare type CalculatedSinglePairInfo = {
+    action: TradeActionType;
+    pairName: string;
+};
+export declare type CalculatePredictionTradingProfit = {
+    profitString: string;
+    profit: BigNumber;
+    pairs: DataWithPrices[];
+    pair1?: CalculatedSinglePairInfo;
+    pair2?: CalculatedSinglePairInfo;
+    pair3?: CalculatedSinglePairInfo;
+};
+/**
+ * YFIUSDT YFIEUR YFIBTC BTCEUR YFIUSDT
+ */
+export declare type SeparatedByAssets = Record<string, DataWithPrices[]>;
+export {};
