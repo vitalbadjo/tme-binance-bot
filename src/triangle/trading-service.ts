@@ -1,31 +1,18 @@
 import { bnbInfoData } from "./fakeData/data"
 import { BASE_CURRENCY_AMOUNT_FOR_CALCULATING } from "../config"
 import BigNumber from "bignumber.js"
-import { TradeActionType } from "./calculate-rates"
 import { priceData } from "./fakeData/priceData"
 import { getSpotRatesAll } from "../apis/binance-api"
 import { Spot } from "@binance/connector"
-import { SpotAccountAsset, SpotAccountInfo } from "../apis/binance-types"
+import { SpotAccountInfo } from "../apis/binance-types"
 import { delaySec } from "../utils"
-
-export type DataWithPrices = {
-	baseAsset: string
-	quoteAsset: string
-	symbol: string
-	price: string
-	stepSize: string
-}
-export type TradingServiceTriangle = [DataWithPrices, DataWithPrices, DataWithPrices]
-
-export type TradingServiceResultTriangleSchema = {
-	triangleString: string
-	triangleData: DataWithPrices[]
-	predicatedProfit: {
-		string: string,
-		bn: BigNumber
-	}
-	additionalPair?: DataWithPrices
-}
+import {
+	CalculatePredictionTradingProfit,
+	DataWithPrices,
+	SeparatedByAssets,
+	TradeActionType,
+	TradingServiceResultTriangleSchema,
+} from "./types"
 
 /**
  * must have
@@ -90,7 +77,6 @@ export class TradingService {
 		triangleString: string,
 		realProfit: string
 	}> {
-		const time = 1000
 		const { triangleData: triangle, predicatedProfit, triangleString } = data
 		if (!triangle.length) {
 			console.log("Triangle is empty")
@@ -103,163 +89,15 @@ export class TradingService {
 		}
 
 		const client = new Spot(process.env.APIK, process.env.APIS, { baseURL: "https://api1.binance.com"})
-		let { data: { balances } }: {data: SpotAccountInfo} = await client.account()
-		const baseAssetAmount = balances.find(el => el.asset === baseAsset)!.free
-		if (triangle.length === 3) {
-			const queryAsset1 = getOtherAsset(triangle[0].symbol, baseAsset)
-			const action1 = getTypeOfDeal(queryAsset1, triangle[0].symbol)
-			console.log("baseAssetAmount", baseAssetAmount)
-			console.log("baseAsset", baseAsset)
-			console.log("queryAsset1", queryAsset1)
-			console.log("action1", action1)
-			let tradeResult1: any = ""
-			if (action1 === "BUY") {
-				tradeResult1 = await client.newOrder(
-					triangle[0].symbol,
-					action1,
-					"MARKET",
-					{
-						...isBase(triangle[0], baseAsset) ? {quantity: baseAssetAmount} : { quoteOrderQty: baseAssetAmount }
-					}
-				)
-			} else {
-				tradeResult1 = await client.newOrder(
-					triangle[0].symbol,
-					action1,
-					"MARKET",
-					{
-						...isBase(triangle[0], baseAsset) ? { quoteOrderQty: baseAssetAmount } : {quantity: baseAssetAmount}
-					}
-				)
-			}
-			console.log("tradeResult1", tradeResult1)
-			await new Promise(resolve => setTimeout(resolve, time))
-			let balances: SpotAccountAsset[] = (await client.account()).data.balances
-			const baseAssetAmount2 = balances.find(el => el.asset === queryAsset1)!.free
-			const baseAsset2 = queryAsset1
-			const queryAsset2 = getOtherAsset(triangle[1].symbol, baseAsset2)
-			const action2 = getTypeOfDeal(queryAsset2, triangle[1].symbol)
-			console.log("baseAssetAmount2", baseAssetAmount2)
-			console.log("baseAsset2", baseAsset2)
-			console.log("queryAsset2", queryAsset2)
-			console.log("action2", action2)
-
-			let tradeResult2: any = ""
-			if (action2 === "BUY") {
-				tradeResult2 = await client.newOrder(
-					triangle[1].symbol,
-					action2,
-					"MARKET",
-					{
-						...isBase(triangle[1], baseAsset2) ? {quantity: baseAssetAmount2} : { quoteOrderQty: baseAssetAmount2 }
-					}
-				)
-			} else {
-				tradeResult2 = await client.newOrder(
-					triangle[1].symbol,
-					action2,
-					"MARKET",
-					{
-						...isBase(triangle[1], baseAsset2) ? { quoteOrderQty: baseAssetAmount2 } : {quantity: baseAssetAmount2}
-					}
-				)
-			}
-			console.log("tradeResult2", tradeResult2)
-			await new Promise(resolve => setTimeout(resolve, time))
-			balances = (await client.account()).data.balances
-			const baseAssetAmount3 = balances.find(el => el.asset === queryAsset2)!.free
-			const baseAsset3 = queryAsset2
-			const queryAsset3 = getOtherAsset(triangle[2].symbol, baseAsset3)
-			const action3 = getTypeOfDeal(queryAsset3, triangle[2].symbol)
-			console.log("baseAssetAmount3", baseAssetAmount3)
-			console.log("baseAsset3", baseAsset3)
-			console.log("queryAsset3", queryAsset3)
-			console.log("action3", action3)
-			let tradeResult3: any = ""
-			if (action3 === "BUY") {
-				tradeResult3 = await client.newOrder(
-					triangle[2].symbol,
-					action3,
-					"MARKET",
-					{
-						...isBase(triangle[2], baseAsset3) ? {quantity: baseAssetAmount3} : { quoteOrderQty: baseAssetAmount3 }
-					}
-				)
-			} else {
-				tradeResult3 = await client.newOrder(
-					triangle[2].symbol,
-					action3,
-					"MARKET",
-					{
-						...isBase(triangle[2], baseAsset3) ? { quoteOrderQty: baseAssetAmount3 } : {quantity: baseAssetAmount3}
-					}
-				)
-			}
-			console.log("tradeResult3", tradeResult3)
-			const result = new BigNumber(tradeResult3.executedQty).minus(new BigNumber(baseAssetAmount))
-			return {
-				predicateProfit: predicatedProfit.string,
-				triangleString,
-				realProfit: result.toString()
-			}
-		}
+		const baseAssetAmount = await retryBalance(baseAsset, new BigNumber(0), 300, 3)
+		console.log("retry base asset (depo) ammount: ", baseAssetAmount)
+		const result = await awaitTrade(client, triangle.map(el => ({...el, isTraded: false})), baseAsset, baseAssetAmount.balance.toString(), 100)
+		console.log("awaitTrade result: ", result)
 		return {
 			predicateProfit: predicatedProfit.string,
 			triangleString,
-			realProfit: "end with no trading"
+			realProfit: new BigNumber(result.resultBaseBalance).minus(baseAssetAmount.balance).toString()
 		}
-		// console.log("spotAccountData", balances)
-		// const tradeResult = await client.newOrder("BNBUSDT", "BUY", "MARKET", {quoteOrderQty: balances.find(el => el.asset === "USDT")!.free})
-		// const tradeResult = await client.newOrder("BNBUSDT", "SELL", "MARKET", {quantity: 0.29})
-		// const responseSell = {
-		// 	symbol: 'BNBUSDT',
-		// 		orderId: 4319883289,
-		// 	orderListId: -1,
-		// 	clientOrderId: 'ZsiCAman6fOKNETzIK7q4D',
-		// 	transactTime: 1662926761439,
-		// 	price: '0.00000000',
-		// 	origQty: '0.29000000',
-		// 	executedQty: '0.29000000',
-		// 	cummulativeQuoteQty: '85.55000000',
-		// 	status: 'FILLED',
-		// 	timeInForce: 'GTC',
-		// 	type: 'MARKET',
-		// 	side: 'SELL',
-		// 	fills: [
-		// 	{
-		// 		price: '295.00000000',
-		// 		qty: '0.29000000',
-		// 		commission: '0.00021749',
-		// 		commissionAsset: 'BNB',
-		// 		tradeId: 584622870
-		// 	}
-		// ]
-		// }
-		// const responseBuy = {
-		// 	symbol: 'BNBUSDT',
-		// 	orderId: 4319884063,
-		// 	orderListId: -1,
-		// 	clientOrderId: 'Ac8aEtbObm1e8xV2GxlSSV',
-		// 	transactTime: 1662926848255,
-		// 	price: '0.00000000',
-		// 	origQty: '0.29000000',
-		// 	executedQty: '0.29000000',
-		// 	cummulativeQuoteQty: '85.57900000',
-		// 	status: 'FILLED',
-		// 	timeInForce: 'GTC',
-		// 	type: 'MARKET',
-		// 	side: 'BUY',
-		// 	fills: [
-		// 		{
-		// 			price: '295.10000000',
-		// 			qty: '0.29000000',
-		// 			commission: '0.00021750',
-		// 			commissionAsset: 'BNB',
-		// 			tradeId: 584622968
-		// 		}
-		// 	]
-		// }
-		// console.log("tradeResult", tradeResult.data)
 	}
 
 	calculateTriangleProfit(
@@ -300,11 +138,10 @@ export class TradingService {
 
 	getRows(
 		originList: DataWithPrices[],
-		baseAsset: string[],
 		length: number = 3
 	): TradingServiceResultTriangleSchema[] {
 
-		const byAsset = getBasePairs(originList, baseAsset)
+		const byAsset = getBasePairs(originList, this.depositedCurrencies)
 		let result: TradingServiceResultTriangleSchema[] = []
 		Object.entries(byAsset).forEach(([base, byAssetList]) => {
 			const triangles = constructTriangles(originList, byAssetList, base, length)
@@ -318,32 +155,10 @@ export class TradingService {
 				}]
 			})
 		})
-		return result.filter(el => el.predicatedProfit.bn.gt(0))
+		return result
 	}
 }
 
-
-type CalculatedSinglePairInfo = {
-	action: TradeActionType
-	pairName: string
-}
-
-type CalculatePredictionTradingProfit = {
-	profitString: string,
-	profit: BigNumber,
-	pairs: DataWithPrices[],
-	pair1?: CalculatedSinglePairInfo,
-	pair2?: CalculatedSinglePairInfo,
-	pair3?: CalculatedSinglePairInfo,
-}
-
-
-/**
- * YFIUSDT YFIEUR YFIBTC BTCEUR YFIUSDT
- */
-
-
-type SeparatedByAssets = Record<string, DataWithPrices[]>
 
 function getBasePairs(originList: DataWithPrices[], baseAssets: string[]): SeparatedByAssets {
 	return originList.reduce<SeparatedByAssets>((p, c) => {
@@ -387,26 +202,6 @@ function constructTriangles(
 		}
 		return pairRow
 	}).filter(el => el.length)
-	// return byAssetList.reduce<DataWithPrices[][]>((p, c) => {
-	// 	let tempList = byAssetList.map(el => el)
-	// 	let triangle: DataWithPrices[]
-	// 	tempList.forEach(el => {
-	// 		tempList = tempList.slice(1)
-	// 		if (c.symbol !== el.symbol) {
-	// 			const [first, second] = extractTwoPairsFromTwoBases(c, el, base)
-	// 			const fd = originList.find(e => e.symbol === first)
-	// 			const sd = originList.find(e => e.symbol === second)
-	// 			if (fd) {
-	// 				triangle = [c, fd, el]
-	// 			} else if (sd) {
-	// 				triangle = [c, sd, el]
-	// 			}
-	// 		} else {
-	// 			triangle = []
-	// 		}
-	// 	})
-	// 	return [...p, triangle]
-	// }, [])
 }
 
 function findLastElementForRow(
@@ -436,6 +231,7 @@ function findLastElementForRow(
 	}
 	return pair
 }
+
 function findPairInOriginListByBaseAsset(
 	originList: DataWithPrices[],
 	base: string,
@@ -464,12 +260,6 @@ function findPairInOriginListByBaseAsset(
 	} else {
 		return newPair
 	}
-}
-
-export function extractTwoPairsFromTwoBases(firstPair: DataWithPrices, secondPair: DataWithPrices, base: string): [string, string] {
-	const firstAsset = firstPair.baseAsset === base ? firstPair.quoteAsset : firstPair.baseAsset
-	const secondAsset = secondPair.baseAsset === base ? secondPair.quoteAsset : secondPair.baseAsset
-	return [`${firstAsset}${secondAsset}`, `${secondAsset}${firstAsset}`]
 }
 
 function isBase(pair: DataWithPrices, asset: string): boolean {
@@ -523,11 +313,12 @@ async function retryBalance(
 	}
 }
 
-export async function awaitTrade(
+async function awaitTrade(
 	client: typeof Spot,
 	row: (DataWithPrices & {isTraded: boolean})[],
 	base: string,
-	baseBalance: string
+	baseBalance: string,
+	delayBetweenTrades: number
 ): Promise<{ resultBaseBalance: string }> {
 	const pairToTrade = row.find(el => !el.isTraded)
 	if (pairToTrade) {
@@ -552,12 +343,17 @@ export async function awaitTrade(
 				quantityParam
 			)
 			if (tradeResult && tradeResult.data.status === "FILLED") {
-				//todo may be await balance
-				if (tradeResult.data.side === "SELL") {
-					return awaitTrade(client, row, newBase, tradeResult.data.cummulativeQuoteQty)
-				} else {
-					return awaitTrade(client, row, newBase, tradeResult.data.executedQty)
+				if (delayBetweenTrades) {
+					await delaySec(delayBetweenTrades)
 				}
+				//todo may be await balance
+				return awaitTrade(
+					client,
+					row,
+					newBase,
+					tradeResult.data.side === "SELL" ? tradeResult.data.cummulativeQuoteQty : tradeResult.data.executedQty,
+					delayBetweenTrades
+				)
 			} else {
 				throw new Error("Something wrong with trade result: tradeResult is undefined")
 			}

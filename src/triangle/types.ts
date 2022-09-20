@@ -1,3 +1,5 @@
+import BigNumber from "bignumber.js"
+
 export type ResponseSymbol = {
 	"symbol": string,
 	"status": string,
@@ -93,3 +95,38 @@ export type CalculatedRate = {
 	triangle: Triangle,
 	profit: string
 }
+export type TradeActionType = "BUY" | "SELL"
+export type DataWithPrices = {
+	baseAsset: string
+	quoteAsset: string
+	symbol: string
+	price: string
+	stepSize: string
+}
+export type TradingServiceResultTriangleSchema = {
+	triangleString: string
+	triangleData: DataWithPrices[]
+	predicatedProfit: {
+		string: string,
+		bn: BigNumber
+	}
+	additionalPair?: DataWithPrices
+}
+type CalculatedSinglePairInfo = {
+	action: TradeActionType
+	pairName: string
+}
+export type CalculatePredictionTradingProfit = {
+	profitString: string,
+	profit: BigNumber,
+	pairs: DataWithPrices[],
+	pair1?: CalculatedSinglePairInfo,
+	pair2?: CalculatedSinglePairInfo,
+	pair3?: CalculatedSinglePairInfo,
+}
+/**
+ * YFIUSDT YFIEUR YFIBTC BTCEUR YFIUSDT
+ */
+
+
+export type SeparatedByAssets = Record<string, DataWithPrices[]>

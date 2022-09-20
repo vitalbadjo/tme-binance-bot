@@ -1,5 +1,4 @@
 import { CURRENCY_DELIMITER } from "../config"
-import { Triangles } from "./types"
 
 export function filterByCurrency(currency: string, array: string[]): { currency: string, filtered: string[] } {
 	return {
@@ -10,24 +9,6 @@ export function filterByCurrency(currency: string, array: string[]): { currency:
 				(b.search(currency) === 0 && b.length === currency.length)
 		}),
 	}
-}
-
-export function pairPouring(base: string, pairs: string[]): string[] {
-	return pairs.map(el => {
-		const [a, b] = el.split(CURRENCY_DELIMITER)
-		return a === base ? b : a
-	})
-}
-
-export function extractUniquePairs(triangles: Triangles): string[] {
-	return triangles.reduce<string[]>((p, c) => {
-		c.forEach(el => {
-			if (!p.includes(el)) {
-				p = [...p, el]
-			}
-		})
-		return p
-	}, [])
 }
 
 export function extractAllCurrencies(pairs: string[]): string[] {
