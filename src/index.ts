@@ -29,14 +29,23 @@ timer = setInterval(async () => {
 			}
 			// file written successfully
 		})
-		const result = await service.trade(row, false)
-		fs.writeFile('/root/trade.txt', `${row.triangleString}; ${row.predicatedProfit.string};${new Date()};${result.realProfit}\n`, { flag: 'a+' }, (err: any) => {
-			if (err) {
-				console.error(err);
-			}
-			// file written successfully
-		})
-		console.log("result", result)
+		try {
+			const result = await service.trade(row, false)
+			fs.writeFile('/root/trade.txt', `${row.triangleString}; ${row.predicatedProfit.string};${new Date()};${result.realProfit}\n`, { flag: 'a+' }, (err: any) => {
+				if (err) {
+					console.error(err);
+				}
+				// file written successfully
+			})
+			console.log("result", result)
+		} catch (e) {
+			fs.writeFile('/root/trade.txt', `${e}\n`, { flag: 'a+' }, (err: any) => {
+				if (err) {
+					console.error(err);
+				}
+				// file written successfully
+			})
+		}
 	} else {
 		console.log("No weather to trade")
 	}

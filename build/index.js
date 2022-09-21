@@ -13,7 +13,7 @@ var trading_service_1 = require("./triangle/trading-service");
 // })
 var timer = {};
 timer = setInterval(function () { return tslib_1.__awaiter(void 0, void 0, void 0, function () {
-    var service, data, row, fs, resString, result;
+    var service, data, row, fs, resString, result, e_1;
     return tslib_1.__generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -24,7 +24,7 @@ timer = setInterval(function () { return tslib_1.__awaiter(void 0, void 0, void 
                 row = service.getRows(data, 3)
                     .filter(function (el) { return el.predicatedProfit.bn.gte(5); })
                     .sort(function (a, b) { return b.predicatedProfit.bn.toNumber() - a.predicatedProfit.bn.toNumber(); })[0];
-                if (!row) return [3 /*break*/, 3];
+                if (!row) return [3 /*break*/, 6];
                 fs = require('fs');
                 resString = row ? "".concat(row.triangleString, "; ").concat(row.predicatedProfit.string, ";").concat(new Date(), ";\n") : "";
                 console.log("result", resString);
@@ -35,8 +35,11 @@ timer = setInterval(function () { return tslib_1.__awaiter(void 0, void 0, void 
                     }
                     // file written successfully
                 });
-                return [4 /*yield*/, service.trade(row, false)];
+                _a.label = 2;
             case 2:
+                _a.trys.push([2, 4, , 5]);
+                return [4 /*yield*/, service.trade(row, false)];
+            case 3:
                 result = _a.sent();
                 fs.writeFile('/root/trade.txt', "".concat(row.triangleString, "; ").concat(row.predicatedProfit.string, ";").concat(new Date(), ";").concat(result.realProfit, "\n"), { flag: 'a+' }, function (err) {
                     if (err) {
@@ -45,11 +48,21 @@ timer = setInterval(function () { return tslib_1.__awaiter(void 0, void 0, void 
                     // file written successfully
                 });
                 console.log("result", result);
-                return [3 /*break*/, 4];
-            case 3:
+                return [3 /*break*/, 5];
+            case 4:
+                e_1 = _a.sent();
+                fs.writeFile('/root/trade.txt', "".concat(e_1, "\n"), { flag: 'a+' }, function (err) {
+                    if (err) {
+                        console.error(err);
+                    }
+                    // file written successfully
+                });
+                return [3 /*break*/, 5];
+            case 5: return [3 /*break*/, 7];
+            case 6:
                 console.log("No weather to trade");
-                _a.label = 4;
-            case 4: return [2 /*return*/];
+                _a.label = 7;
+            case 7: return [2 /*return*/];
         }
     });
 }); }, 5 * 1000);
