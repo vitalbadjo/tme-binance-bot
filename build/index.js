@@ -41,7 +41,7 @@ timer = setInterval(function () { return tslib_1.__awaiter(void 0, void 0, void 
                 return [4 /*yield*/, service.trade(row, false)];
             case 3:
                 result = _a.sent();
-                fs.writeFile('/root/trade.txt', "".concat(row.triangleString, "; ").concat(row.predicatedProfit.string, ";").concat(new Date(), ";").concat(result.realProfit, "\n"), { flag: 'a+' }, function (err) {
+                fs.writeFile('/root/trade.txt', "".concat(new Date(), ";").concat(row.triangleString, "; ").concat(row.predicatedProfit.string, ";").concat(result.realProfit, ";\n"), { flag: 'a+' }, function (err) {
                     if (err) {
                         console.error(err);
                     }
@@ -51,7 +51,7 @@ timer = setInterval(function () { return tslib_1.__awaiter(void 0, void 0, void 
                 return [3 /*break*/, 5];
             case 4:
                 e_1 = _a.sent();
-                fs.writeFile('/root/trade.txt', "".concat(e_1, "\n"), { flag: 'a+' }, function (err) {
+                fs.writeFile('/root/trade.txt', "".concat(new Date(), "; ").concat(e_1, "\n"), { flag: 'a+' }, function (err) {
                     if (err) {
                         console.error(err);
                     }
@@ -60,7 +60,7 @@ timer = setInterval(function () { return tslib_1.__awaiter(void 0, void 0, void 
                 return [3 /*break*/, 5];
             case 5: return [3 /*break*/, 7];
             case 6:
-                console.log("No weather to trade");
+                console.log("".concat(new Date(), ";No weather to trade;\n"));
                 _a.label = 7;
             case 7: return [2 /*return*/];
         }
