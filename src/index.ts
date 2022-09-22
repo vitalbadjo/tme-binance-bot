@@ -15,7 +15,7 @@ timer = setInterval(async () => {
 	const service = new TradingService(20, false, ["USDT", "BUSD", "ETH", "BTC"], ["BTCST", "TCT"])
 	const data = await service.getDataWithPrices()
 	const row = service.getRows(data, 3)
-		.filter(el => el.predicatedProfit.bn.gte(5))
+		.filter(el => el.predicatedProfit.bn.gte(4))
 		.sort((a,b) => b.predicatedProfit.bn.toNumber() - a.predicatedProfit.bn.toNumber())[0]
 
 	if (row) {
