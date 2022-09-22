@@ -31,7 +31,7 @@ timer = setInterval(async () => {
 		})
 		try {
 			const result = await service.trade(row, false)
-			fs.writeFile('/root/trade.txt', `${row.triangleString}; ${row.predicatedProfit.string};${new Date()};${result.realProfit}\n`, { flag: 'a+' }, (err: any) => {
+			fs.writeFile('/root/trade.txt', `${new Date()};${row.triangleString}; ${row.predicatedProfit.string};${result.realProfit};\n`, { flag: 'a+' }, (err: any) => {
 				if (err) {
 					console.error(err);
 				}
@@ -39,7 +39,7 @@ timer = setInterval(async () => {
 			})
 			console.log("result", result)
 		} catch (e) {
-			fs.writeFile('/root/trade.txt', `${e}\n`, { flag: 'a+' }, (err: any) => {
+			fs.writeFile('/root/trade.txt', `${new Date()}; ${e}\n`, { flag: 'a+' }, (err: any) => {
 				if (err) {
 					console.error(err);
 				}
@@ -47,7 +47,7 @@ timer = setInterval(async () => {
 			})
 		}
 	} else {
-		console.log("No weather to trade")
+		console.log(`${new Date()};No weather to trade;\n`)
 	}
 
 
