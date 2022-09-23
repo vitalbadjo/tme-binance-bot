@@ -8,9 +8,9 @@ var tslib_1 = require("tslib");
 // import { getSpotAssets } from "./apis/binance-api"
 // import { getTriangles } from "./triangle"
 var trading_service_1 = require("./triangle/trading-service");
-// getSpotAssets().then(e => {
-// 	console.log("Triangles: ", getTriangles(e))
-// })
+var dotenv = tslib_1.__importStar(require("dotenv"));
+dotenv.config();
+console.log(process.env.APIS);
 var timer = {};
 timer = setInterval(function () { return tslib_1.__awaiter(void 0, void 0, void 0, function () {
     var service, data, row, fs, resString, result, e_1;
@@ -21,14 +21,19 @@ timer = setInterval(function () { return tslib_1.__awaiter(void 0, void 0, void 
                 return [4 /*yield*/, service.getDataWithPrices()];
             case 1:
                 data = _a.sent();
-                row = service.getRows(data, 3)
+                row = service
+                    .getRows(data, 3)
                     .filter(function (el) { return el.predicatedProfit.bn.gte(4); })
-                    .sort(function (a, b) { return b.predicatedProfit.bn.toNumber() - a.predicatedProfit.bn.toNumber(); })[0];
+                    .sort(function (a, b) {
+                    return b.predicatedProfit.bn.toNumber() - a.predicatedProfit.bn.toNumber();
+                })[0];
                 if (!row) return [3 /*break*/, 6];
-                fs = require('fs');
-                resString = row ? "".concat(row.triangleString, "; ").concat(row.predicatedProfit.string, ";").concat(new Date(), ";\n") : "";
+                fs = require("fs");
+                resString = row
+                    ? "".concat(row.triangleString, "; ").concat(row.predicatedProfit.string, ";").concat(new Date(), ";\n")
+                    : "";
                 console.log("result", resString);
-                fs.writeFile('/root/test.txt', resString, { flag: 'a+' }, function (err) {
+                fs.writeFile("/root/test.txt", resString, { flag: "a+" }, function (err) {
                     // fs.writeFile('/Users/vitaliyzhalnin/test.txt', resStringUsdt+resStringUsdc+resStringBnb+resStringBusd+resStringBtc+resStringEth, { flag: 'a+' }, (err: any) => {
                     if (err) {
                         console.error(err);
@@ -41,7 +46,7 @@ timer = setInterval(function () { return tslib_1.__awaiter(void 0, void 0, void 
                 return [4 /*yield*/, service.trade(row, false)];
             case 3:
                 result = _a.sent();
-                fs.writeFile('/root/trade.txt', "".concat(new Date(), ";").concat(row.triangleString, "; ").concat(row.predicatedProfit.string, ";").concat(result.realProfit, ";\n"), { flag: 'a+' }, function (err) {
+                fs.writeFile("/root/trade.txt", "".concat(new Date(), ";").concat(row.triangleString, "; ").concat(row.predicatedProfit.string, ";").concat(result.realProfit, ";\n"), { flag: "a+" }, function (err) {
                     if (err) {
                         console.error(err);
                     }
@@ -51,7 +56,7 @@ timer = setInterval(function () { return tslib_1.__awaiter(void 0, void 0, void 
                 return [3 /*break*/, 5];
             case 4:
                 e_1 = _a.sent();
-                fs.writeFile('/root/trade.txt', "".concat(new Date(), "; ").concat(e_1, "\n"), { flag: 'a+' }, function (err) {
+                fs.writeFile("/root/trade.txt", "".concat(new Date(), "; ").concat(e_1, "\n"), { flag: "a+" }, function (err) {
                     if (err) {
                         console.error(err);
                     }
@@ -67,6 +72,9 @@ timer = setInterval(function () { return tslib_1.__awaiter(void 0, void 0, void 
     });
 }); }, 5 * 1000);
 console.log(timer);
+/**
+ * telegram functions
+ */
 // let timeoutSecs: number = 120
 // let storage: LocalStorage = new LocalStorage(2)
 //
