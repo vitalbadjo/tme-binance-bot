@@ -21,7 +21,7 @@ timer = setInterval(async () => {
   const data = await service.getDataWithPrices()
   const row = service
     .getRows(data, 3)
-    .filter((el) => el.predicatedProfit.bn.gte(4))
+    .filter((el) => el.predicatedProfit.bn.gte(5))
     .sort(
       (a, b) =>
         b.predicatedProfit.bn.toNumber() - a.predicatedProfit.bn.toNumber()
