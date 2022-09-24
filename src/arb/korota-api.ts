@@ -53,8 +53,7 @@ export async function getRatesKoronaPay({
   receivingMethod,
   paidNotificationEnabled,
 }: KoronaPayRequest): Promise<string> {
-  const response = await axios.create()
-    .get(`${CONFIG.koronaPay.apiBaseUrl}/transfers/online/api/transfers/tariffs?
+  const response = await axios.create().get(`${CONFIG.koronaPay.apiBaseUrl}/transfers/online/api/transfers/tariffs?
     sendingCountryId=${sendingCountryId}&
 		sendingCurrencyId=${sendingCurrencyId}&
 		receivingCountryId=${receivingCountryId}&
@@ -67,6 +66,21 @@ export async function getRatesKoronaPay({
   // @ts-ignore
   return new BigNumber(data).toString()
 }
+
+export async function getRateKoronaPayTurkUsd(): Promise<{ sendRub: BigNumber; receiveUsd: BigNumber }> {
+  const response = await axios
+    .create()
+    .get(
+      "https://koronapay.com/transfers/online/api/transfers/tariffs?sendingCountryId=RUS&sendingCurrencyId=810&receivingCountryId=TUR&receivingCurrencyId=840&paymentMethod=debitCard&receivingAmount=480000&receivingMethod=cash&paidNotificationEnabled=true"
+    )
+  const data: KoronaPayResponse = response.data
+  const { receivingAmount, sendingAmount } = data[0]
+  return {
+    sendRub: new BigNumber(sendingAmount).dividedBy(100),
+    receiveUsd: new BigNumber(receivingAmount).dividedBy(100),
+  }
+}
+
 type KoronaPayRequest = {
   sendingCountryId: "RUS"
   sendingCurrencyId: number

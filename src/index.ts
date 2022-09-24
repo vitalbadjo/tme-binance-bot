@@ -12,26 +12,16 @@ console.log(process.env.APIS)
 
 let timer: NodeJS.Timer = {} as any
 timer = setInterval(async () => {
-  const service = new TradingService(
-    20,
-    false,
-    ["USDT", "BUSD", "ETH", "BTC"],
-    ["BTCST", "TCT"]
-  )
+  const service = new TradingService(1, false, ["USDT", "BUSD", "ETH", "BTC"], ["BTCST", "TCT"])
   const data = await service.getDataWithPrices()
   const row = service
     .getRows(data, 3)
     .filter((el) => el.predicatedProfit.bn.gte(5))
-    .sort(
-      (a, b) =>
-        b.predicatedProfit.bn.toNumber() - a.predicatedProfit.bn.toNumber()
-    )[0]
+    .sort((a, b) => b.predicatedProfit.bn.toNumber() - a.predicatedProfit.bn.toNumber())[0]
 
   if (row) {
     const fs = require("fs")
-    const resString = row
-      ? `${row.triangleString}; ${row.predicatedProfit.string};${new Date()};\n`
-      : ""
+    const resString = row ? `${row.triangleString}; ${row.predicatedProfit.string};${new Date()};\n` : ""
     console.log("result", resString)
     fs.writeFile("/root/test.txt", resString, { flag: "a+" }, (err: any) => {
       // fs.writeFile('/Users/vitaliyzhalnin/test.txt', resStringUsdt+resStringUsdc+resStringBnb+resStringBusd+resStringBtc+resStringEth, { flag: 'a+' }, (err: any) => {
@@ -44,9 +34,7 @@ timer = setInterval(async () => {
       const result = await service.trade(row, false)
       fs.writeFile(
         "/root/trade.txt",
-        `${new Date()};${row.triangleString}; ${row.predicatedProfit.string};${
-          result.realProfit
-        };\n`,
+        `${new Date()};${row.triangleString}; ${row.predicatedProfit.string};${result.realProfit};\n`,
         { flag: "a+" },
         (err: any) => {
           if (err) {
@@ -57,22 +45,17 @@ timer = setInterval(async () => {
       )
       console.log("result", result)
     } catch (e) {
-      fs.writeFile(
-        "/root/trade.txt",
-        `${new Date()}; ${e}\n`,
-        { flag: "a+" },
-        (err: any) => {
-          if (err) {
-            console.error(err)
-          }
-          // file written successfully
+      fs.writeFile("/root/trade.txt", `${new Date()}; ${e}\n`, { flag: "a+" }, (err: any) => {
+        if (err) {
+          console.error(err)
         }
-      )
+        // file written successfully
+      })
     }
   } else {
     console.log(`${new Date()};No weather to trade;\n`)
   }
-}, 5 * 1000)
+}, 2 * 1000)
 console.log(timer)
 
 /**

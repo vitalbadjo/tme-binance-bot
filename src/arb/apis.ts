@@ -42,20 +42,16 @@ type ParibuRatesResponse = {
 //     bannerContent: [],
 //   },
 // }
-export async function getRatesParibuUsdtLt(): Promise<string> {
-  const response = await axios
-    .create()
-    .get(`${CONFIG.paribu.apiBaseUrl}/app/initials`)
+export async function getRatesParibuUsdtLt(): Promise<BigNumber> {
+  const response = await axios.create().get(`${CONFIG.paribu.apiBaseUrl}/app/initials`)
   const data: ParibuRatesResponse = response.data
-  return new BigNumber(data.data.ticker["usdt-tl"].c).toString()
+  return new BigNumber(data.data.ticker["usdt-tl"].c)
 }
 
-export async function getRatesBitexenUsdtLt(): Promise<string> {
-  const response = await axios
-    .create()
-    .get(`${CONFIG.bitexen.apiBaseUrl}/api/v1/market_info/USDTTRY/`)
+export async function getRatesBitexenUsdtLt(): Promise<BigNumber> {
+  const response = await axios.create().get(`${CONFIG.bitexen.apiBaseUrl}/ticker/USDTTRY/`)
   const data: BitexenResponse = response.data
-  return new BigNumber(data.data.ticker.ask).toString()
+  return new BigNumber(data.data.ticker.ask)
 }
 
 type BitexenResponse = {
