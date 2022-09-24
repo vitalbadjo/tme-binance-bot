@@ -30,13 +30,11 @@ function getRatesParibuUsdtLt() {
         var response, data;
         return tslib_1.__generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, axios_1.default
-                        .create()
-                        .get("".concat(config_1.CONFIG.paribu.apiBaseUrl, "/app/initials"))];
+                case 0: return [4 /*yield*/, axios_1.default.create().get("".concat(config_1.CONFIG.paribu.apiBaseUrl, "/app/initials"))];
                 case 1:
                     response = _a.sent();
                     data = response.data;
-                    return [2 /*return*/, new bignumber_js_1.default(data.data.ticker["usdt-tl"].c).toString()];
+                    return [2 /*return*/, new bignumber_js_1.default(data.data.ticker["usdt-tl"].c)];
             }
         });
     });
@@ -47,13 +45,11 @@ function getRatesBitexenUsdtLt() {
         var response, data;
         return tslib_1.__generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, axios_1.default
-                        .create()
-                        .get("".concat(config_1.CONFIG.bitexen.apiBaseUrl, "/api/v1/market_info/USDTTRY/"))];
+                case 0: return [4 /*yield*/, axios_1.default.create().get("".concat(config_1.CONFIG.bitexen.apiBaseUrl, "/ticker/USDTTRY/"))];
                 case 1:
                     response = _a.sent();
                     data = response.data;
-                    return [2 /*return*/, new bignumber_js_1.default(data.data.ticker.ask).toString()];
+                    return [2 /*return*/, new bignumber_js_1.default(data.data.ticker.ask)];
             }
         });
     });

@@ -1,3 +1,4 @@
+import BigNumber from "bignumber.js";
 export declare type KoronaPayDirectionsResponse = {
     country: {
         id: KoronaPayCountryId;
@@ -20,6 +21,10 @@ export declare const koronaConf: {
     TRY: number;
 };
 export declare function getRatesKoronaPay({ sendingCountryId, sendingCurrencyId, receivingCountryId, receivingCurrencyId, paymentMethod, receivingAmount, receivingMethod, paidNotificationEnabled, }: KoronaPayRequest): Promise<string>;
+export declare function getRateKoronaPayTurkUsd(): Promise<{
+    sendRub: BigNumber;
+    receiveUsd: BigNumber;
+}>;
 declare type KoronaPayRequest = {
     sendingCountryId: "RUS";
     sendingCurrencyId: number;

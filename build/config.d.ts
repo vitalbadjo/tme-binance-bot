@@ -6,9 +6,6 @@ export declare const CONFIG: {
     paribu: {
         apiBaseUrl: string;
     };
-    sheets: {
-        apiBaseUrl: string;
-    };
     bitexen: {
         apiBaseUrl: string;
     };
@@ -16,6 +13,16 @@ export declare const CONFIG: {
         apiBaseUrl: string;
     };
     koronaPay: {
+        apiBaseUrl: string;
+    };
+    garantex: {
+        apiBaseUrl: string;
+        limitUstForBids: string;
+    };
+    deniz: {
+        apiBaseUrl: string;
+    };
+    sheets: {
         apiBaseUrl: string;
     };
 };

@@ -45,7 +45,7 @@ var TradingService = /** @class */ (function () {
             return tslib_1.__generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        if ((this.priceRequestIntervalSec * 1000 + this.priceRequestDate) > new Date().getTime()) {
+                        if (this.priceRequestIntervalSec * 1000 + this.priceRequestDate > new Date().getTime()) {
                             console.log("Price request interval doesnt out");
                             return [2 /*return*/, this.dataWithPricesCache];
                         }
@@ -60,12 +60,14 @@ var TradingService = /** @class */ (function () {
                     case 3:
                         prices = _a;
                         dataWithPrices = data_1.bnbInfoData.symbols
-                            .filter(function (e) { return e.isSpotTradingAllowed
-                            && e.status === "TRADING"
-                            && e.orderTypes.includes("MARKET")
-                            && e.permissions.includes("SPOT")
-                            && !_this.filterAssets.includes(e.baseAsset)
-                            && !_this.filterAssets.includes(e.quoteAsset); })
+                            .filter(function (e) {
+                            return e.isSpotTradingAllowed &&
+                                e.status === "TRADING" &&
+                                e.orderTypes.includes("MARKET") &&
+                                e.permissions.includes("SPOT") &&
+                                !_this.filterAssets.includes(e.baseAsset) &&
+                                !_this.filterAssets.includes(e.quoteAsset);
+                        })
                             .map(function (e) {
                             var baseAsset = e.baseAsset, quoteAsset = e.quoteAsset, symbol = e.symbol, filters = e.filters;
                             var filterBase = filters.find(function (el) { return el.filterType === "LOT_SIZE"; });
@@ -76,7 +78,7 @@ var TradingService = /** @class */ (function () {
                                 symbol: symbol,
                                 price: prices.find(function (el) { return el.symbol === symbol; }).price,
                                 stepSizeQuote: filterQuote && "minPrice" in filterQuote ? filterQuote.minPrice : "0.00000001",
-                                stepSizeBase: filterBase && "minQty" in filterBase ? filterBase.minQty : "1"
+                                stepSizeBase: filterBase && "minQty" in filterBase ? filterBase.minQty : "1",
                             };
                         });
                         this.dataWithPricesCache = dataWithPrices;
@@ -104,7 +106,7 @@ var TradingService = /** @class */ (function () {
                             return [2 /*return*/, { predicateProfit: predicatedProfit.string, triangleString: triangleString, realProfit: "not run" }];
                         }
                         client = new connector_1.Spot(process.env.APIK, process.env.APIS, { baseURL: "https://api.binance.com" });
-                        return [4 /*yield*/, retryBalance(baseAsset, new bignumber_js_1.default(0), 300, 3)];
+                        return [4 /*yield*/, retryBalance(baseAsset, new bignumber_js_1.default(0), 300, 1)];
                     case 1:
                         baseAssetAmount = _a.sent();
                         console.log("retry base asset (depo) ammount: ", baseAssetAmount);
@@ -115,7 +117,7 @@ var TradingService = /** @class */ (function () {
                         return [2 /*return*/, {
                                 predicateProfit: predicatedProfit.string,
                                 triangleString: triangleString,
-                                realProfit: new bignumber_js_1.default(result.resultBaseBalance).minus(baseAssetAmount.balance).toString()
+                                realProfit: new bignumber_js_1.default(result.resultBaseBalance).minus(baseAssetAmount.balance).toString(),
                             }];
                 }
             });
@@ -133,13 +135,13 @@ var TradingService = /** @class */ (function () {
                 //todo improve calculating by entire digits after testing on trade
                 return {
                     asset: c.baseAsset === p.asset ? c.quoteAsset : c.baseAsset,
-                    amount: p.amount.dividedBy(new bignumber_js_1.default(c.price)).multipliedBy(new bignumber_js_1.default(0.999))
+                    amount: p.amount.dividedBy(new bignumber_js_1.default(c.price)).multipliedBy(new bignumber_js_1.default(0.999)),
                 };
             }
             else {
                 return {
                     asset: c.baseAsset === p.asset ? c.quoteAsset : c.baseAsset,
-                    amount: p.amount.multipliedBy(new bignumber_js_1.default(c.price)).multipliedBy(new bignumber_js_1.default(0.999))
+                    amount: p.amount.multipliedBy(new bignumber_js_1.default(c.price)).multipliedBy(new bignumber_js_1.default(0.999)),
                 };
             }
         }, { asset: baseAsset, amount: baseAssetAmount });
@@ -161,11 +163,13 @@ var TradingService = /** @class */ (function () {
             // console.log("triangles", triangles)
             return triangles.map(function (el) {
                 var calc = _this.calculateTriangleProfit(el, base);
-                result = tslib_1.__spreadArray(tslib_1.__spreadArray([], result, true), [{
+                result = tslib_1.__spreadArray(tslib_1.__spreadArray([], result, true), [
+                    {
                         triangleString: el.map(function (e) { return e.symbol; }).join(","),
                         triangleData: el,
                         predicatedProfit: { string: calc.profitString, bn: calc.profit },
-                    }], false);
+                    },
+                ], false);
             });
         });
         return result;
@@ -185,7 +189,8 @@ function getBasePairs(originList, baseAssets) {
     }, {});
 }
 function constructTriangles(originList, byAssetList, base, length) {
-    return byAssetList.map(function (byAssetItem) {
+    return byAssetList
+        .map(function (byAssetItem) {
         var pairRow = [byAssetItem];
         var baseAsset = byAssetItem.quoteAsset === base ? byAssetItem.baseAsset : byAssetItem.quoteAsset;
         // iterate n times to find new row in originList
@@ -193,9 +198,9 @@ function constructTriangles(originList, byAssetList, base, length) {
             // console.log("pairRow.map(e => e.symbol)", pairRow.map(e => e.symbol))
             // console.log("base", base)
             // console.log("baseAsset", baseAsset)
-            var element = i === length - 1 ?
-                findLastElementForRow(originList, pairRow.map(function (e) { return e.symbol; }), base, baseAsset) :
-                findPairInOriginListByBaseAsset(originList, baseAsset, pairRow.map(function (e) { return e.symbol; }));
+            var element = i === length - 1
+                ? findLastElementForRow(originList, pairRow.map(function (e) { return e.symbol; }), base, baseAsset)
+                : findPairInOriginListByBaseAsset(originList, baseAsset, pairRow.map(function (e) { return e.symbol; }));
             // console.log("element", element)
             if (element) {
                 pairRow.push(element.pair);
@@ -206,7 +211,8 @@ function constructTriangles(originList, byAssetList, base, length) {
             }
         }
         return pairRow;
-    }).filter(function (el) { return el.length; });
+    })
+        .filter(function (el) { return el.length; });
 }
 function findLastElementForRow(originList, excludePairs, base1, base2) {
     if (excludePairs === void 0) { excludePairs = []; }
@@ -229,7 +235,7 @@ function findLastElementForRow(originList, excludePairs, base1, base2) {
     if (pair) {
         return {
             pair: pair,
-            newBase: ""
+            newBase: "",
         };
     }
     return pair;
@@ -256,7 +262,7 @@ function findPairInOriginListByBaseAsset(originList, base, excludePairs) {
     if (newPair) {
         return {
             pair: newPair,
-            newBase: newBase
+            newBase: newBase,
         };
     }
     else {
@@ -294,14 +300,14 @@ function retryBalance(asset, expectedBalance, delayMilliSec, tryNum) {
                         if (bal.gte(expectedBalance)) {
                             return [2 /*return*/, {
                                     balance: bal,
-                                    isEnough: isEnough
+                                    isEnough: isEnough,
                                 }];
                         }
                         else {
                             if (tryNum === 0) {
                                 return [2 /*return*/, {
                                         balance: bal,
-                                        isEnough: isEnough
+                                        isEnough: isEnough,
                                     }];
                             }
                             else {
@@ -313,7 +319,7 @@ function retryBalance(asset, expectedBalance, delayMilliSec, tryNum) {
                         console.log("Retry balance error: try number is out but balance is undefined");
                         return [2 /*return*/, {
                                 balance: new bignumber_js_1.default(0),
-                                isEnough: false
+                                isEnough: false,
                             }];
                     }
                     return [2 /*return*/];
@@ -333,9 +339,9 @@ function awaitTrade(client, row, base, baseBalance, delayBetweenTrades, test) {
                     symbol = pairToTrade.symbol;
                     newBase = getOtherAsset(symbol, base);
                     action = getTypeOfDeal(newBase, symbol);
-                    quantityParam = action === "BUY" ?
-                        { quoteOrderQty: alignToStepSize(baseBalance, pairToTrade.stepSizeQuote) } :
-                        { quantity: alignToStepSize(baseBalance, pairToTrade.stepSizeBase) };
+                    quantityParam = action === "BUY"
+                        ? { quoteOrderQty: alignToStepSize(baseBalance, pairToTrade.stepSizeQuote) }
+                        : { quantity: alignToStepSize(baseBalance, pairToTrade.stepSizeBase) };
                     console.log("Trade query:", "Symbol: ".concat(symbol, "\n Action: ").concat(action, "\n Type: MARKET\nQuantity: ").concat(JSON.stringify(quantityParam)));
                     tradeResult = "";
                     _a.label = 1;
@@ -367,11 +373,11 @@ function awaitTrade(client, row, base, baseBalance, delayBetweenTrades, test) {
                 case 9: return [3 /*break*/, 12];
                 case 10:
                     console.log("Congrats trade fully completed!!!");
-                    return [4 /*yield*/, retryBalance(base, new bignumber_js_1.default(0), 200, 3)];
+                    return [4 /*yield*/, retryBalance(base, new bignumber_js_1.default(0), 200, 1)];
                 case 11:
                     balance = (_a.sent()).balance;
                     return [2 /*return*/, {
-                            resultBaseBalance: balance.toString()
+                            resultBaseBalance: balance.toString(),
                         }];
                 case 12: return [2 /*return*/];
             }

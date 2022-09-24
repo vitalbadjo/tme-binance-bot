@@ -17,21 +17,17 @@ timer = setInterval(function () { return tslib_1.__awaiter(void 0, void 0, void 
     return tslib_1.__generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                service = new trading_service_1.TradingService(20, false, ["USDT", "BUSD", "ETH", "BTC"], ["BTCST", "TCT"]);
+                service = new trading_service_1.TradingService(1, false, ["USDT", "BUSD", "ETH", "BTC"], ["BTCST", "TCT"]);
                 return [4 /*yield*/, service.getDataWithPrices()];
             case 1:
                 data = _a.sent();
                 row = service
                     .getRows(data, 3)
                     .filter(function (el) { return el.predicatedProfit.bn.gte(5); })
-                    .sort(function (a, b) {
-                    return b.predicatedProfit.bn.toNumber() - a.predicatedProfit.bn.toNumber();
-                })[0];
+                    .sort(function (a, b) { return b.predicatedProfit.bn.toNumber() - a.predicatedProfit.bn.toNumber(); })[0];
                 if (!row) return [3 /*break*/, 6];
                 fs = require("fs");
-                resString = row
-                    ? "".concat(row.triangleString, "; ").concat(row.predicatedProfit.string, ";").concat(new Date(), ";\n")
-                    : "";
+                resString = row ? "".concat(row.triangleString, "; ").concat(row.predicatedProfit.string, ";").concat(new Date(), ";\n") : "";
                 console.log("result", resString);
                 fs.writeFile("/root/test.txt", resString, { flag: "a+" }, function (err) {
                     // fs.writeFile('/Users/vitaliyzhalnin/test.txt', resStringUsdt+resStringUsdc+resStringBnb+resStringBusd+resStringBtc+resStringEth, { flag: 'a+' }, (err: any) => {
@@ -70,7 +66,7 @@ timer = setInterval(function () { return tslib_1.__awaiter(void 0, void 0, void 
             case 7: return [2 /*return*/];
         }
     });
-}); }, 5 * 1000);
+}); }, 2 * 1000);
 console.log(timer);
 /**
  * telegram functions
