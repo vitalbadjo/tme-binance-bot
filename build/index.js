@@ -23,7 +23,7 @@ timer = setInterval(function () { return tslib_1.__awaiter(void 0, void 0, void 
                 data = _a.sent();
                 row = service
                     .getRows(data, 3)
-                    .filter(function (el) { return el.predicatedProfit.bn.gte(5); })
+                    .filter(function (el) { return el.predicatedProfit.bn.gte(6); })
                     .sort(function (a, b) { return b.predicatedProfit.bn.toNumber() - a.predicatedProfit.bn.toNumber(); })[0];
                 if (!row) return [3 /*break*/, 6];
                 fs = require("fs");
