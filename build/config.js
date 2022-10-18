@@ -16,7 +16,7 @@ exports.CONFIG = {
         apiBaseUrl: "https://www.btcturk.com",
     },
     koronaPay: {
-        apiBaseUrl: "https://koronapay.com",
+        apiBaseUrl: "https://koronapay.com/transfers/online/api",
     },
     garantex: {
         apiBaseUrl: "https://garantex.io/api/v2",
