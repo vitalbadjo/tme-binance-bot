@@ -1,156 +1,133 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var tslib_1 = require("tslib");
-// import TelegramBot from "node-telegram-bot-api"
-// import { getEnv } from "./utils"
-// import { LocalStorage } from "./local-storage"
-// import { KEYBOARDS } from "./keyboards"
-// import { getSpotAssets } from "./apis/binance-api"
-// import { getTriangles } from "./triangle"
-var trading_service_1 = require("./triangle/trading-service");
+var node_telegram_bot_api_1 = tslib_1.__importDefault(require("node-telegram-bot-api"));
+var utils_1 = require("./utils");
+var local_storage_1 = require("./local-storage");
+var keyboards_1 = require("./keyboards");
 var dotenv = tslib_1.__importStar(require("dotenv"));
 dotenv.config();
-console.log(process.env.APIS);
-var timer = {};
-timer = setInterval(function () { return tslib_1.__awaiter(void 0, void 0, void 0, function () {
-    var service, data, row, fs, resString, result, e_1;
-    return tslib_1.__generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                service = new trading_service_1.TradingService(1, false, ["USDT", "BUSD", "ETH", "BTC"], ["BTCST", "TCT"]);
-                return [4 /*yield*/, service.getDataWithPrices()];
-            case 1:
-                data = _a.sent();
-                row = service
-                    .getRows(data, 3)
-                    .filter(function (el) { return el.predicatedProfit.bn.gte(6); })
-                    .sort(function (a, b) { return b.predicatedProfit.bn.toNumber() - a.predicatedProfit.bn.toNumber(); })[0];
-                if (!row) return [3 /*break*/, 6];
-                fs = require("fs");
-                resString = row ? "".concat(row.triangleString, "; ").concat(row.predicatedProfit.string, ";").concat(new Date(), ";\n") : "";
-                console.log("result", resString);
-                fs.writeFile("/root/test.txt", resString, { flag: "a+" }, function (err) {
-                    // fs.writeFile('/Users/vitaliyzhalnin/test.txt', resStringUsdt+resStringUsdc+resStringBnb+resStringBusd+resStringBtc+resStringEth, { flag: 'a+' }, (err: any) => {
-                    if (err) {
-                        console.error(err);
-                    }
-                    // file written successfully
-                });
-                _a.label = 2;
-            case 2:
-                _a.trys.push([2, 4, , 5]);
-                return [4 /*yield*/, service.trade(row, false)];
-            case 3:
-                result = _a.sent();
-                fs.writeFile("/root/trade.txt", "".concat(new Date(), ";").concat(row.triangleString, "; ").concat(row.predicatedProfit.string, ";").concat(result.realProfit, ";\n"), { flag: "a+" }, function (err) {
-                    if (err) {
-                        console.error(err);
-                    }
-                    // file written successfully
-                });
-                console.log("result", result);
-                return [3 /*break*/, 5];
-            case 4:
-                e_1 = _a.sent();
-                fs.writeFile("/root/trade.txt", "".concat(new Date(), "; ").concat(e_1, "\n"), { flag: "a+" }, function (err) {
-                    if (err) {
-                        console.error(err);
-                    }
-                    // file written successfully
-                });
-                return [3 /*break*/, 5];
-            case 5: return [3 /*break*/, 7];
-            case 6:
-                console.log("".concat(new Date(), ";No weather to trade;\n"));
-                _a.label = 7;
-            case 7: return [2 /*return*/];
-        }
-    });
-}); }, 2 * 1000);
-console.log(timer);
 /**
  * telegram functions
  */
-// let timeoutSecs: number = 120
-// let storage: LocalStorage = new LocalStorage(2)
-//
-// const tmeApi = new TelegramBot(getEnv("TLGRM_TKN"), {polling: true})
-// // db.authenticate().then(() => console.log("Connected to database")).catch(e => console.log(`DB connections error: ${e}`))
-// // db.sync().then()
-// tmeApi.setMyCommands([
-// 	{command: '/start', description: 'Подписатся на сигналы'},
-// 	{command: '/test', description: 'Тест вопросов ответов'},
-// ])
-// tmeApi.on("message", async message => {
-// 	console.log("message", message)
-// 	if (message) {
-// 		if (message.reply_to_message) {
-// 			if (message.reply_to_message.message_id) {
-// 				const replyMessageId = message.reply_to_message.message_id
-// 				console.log("replyMessageId", replyMessageId)
-// 			}
-// 			// reply functions
-// 		}
-// 	}
-//
-// 	if (message.text === "/test") {
-// 		const req = await tmeApi.sendMessage(message.chat.id, "Test", KEYBOARDS.digitalKeyboard)
-// 		console.log("req.message_id", req.message_id)
-// 		tmeApi.on("inline_query", qmsg => {
-// 			console.log("qmsg", qmsg)
-// 		})
-// 		return req
-// 	}
-// 	if (message.text === "/start") {
-// 		timer = startPolling()
-// 		storage.setUser([message.chat.id.toString()])
-// 		// await User.create({chatId: message.chat.id})
-// 		return tmeApi.sendMessage(message.chat.id, "Congrats! Your subscription started")
-// 	}
-// 	if (message.text?.includes("new")) {
-// 		storage = new LocalStorage(parseInt(message.text?.slice(3)))
-// 	}
-// 	if (message.text?.includes("time")) {
-// 		clearInterval(timer)
-// 		timeoutSecs = parseInt(message.text?.slice(4))
-// 		timer = startPolling()
-// 	}
-// 	if (message.text === "stop") {
-// 		clearInterval(timer)
-// 		return tmeApi.sendMessage(message.chat.id, "Your subscription cancelled")
-// 	}
-// 	return tmeApi.sendMessage(message.chat.id, "Yes that's right")
-// })
-// async function getChats() {
-// 	return storage.getUsers()// User.findAll()
-// }
-// function startPolling() {
-// 	return setInterval(async () => {
-// 		const chats = await getChats()
-// 		if (chats.length) {
-// 			const signals = await storage.getMarketData()//await getFeaturesSignals()
-// 			//todo write in db
-// 			// check if hawe new signals >> send
-// 			if (signals) {
-// 				if (Object.keys(signals).length) {
-// 					chats.forEach((chatId) => {
-// 						const message = Object.entries(signals).filter(([, data]) => !data.isDelivered).map(([symbol]) => {
-// 							return `${symbol}: ${signals[symbol].priceChangePercent}%`
-// 						}).join("\n")
-// 						tmeApi.sendMessage(chatId, message).then(() => {
-// 							Object.keys(signals).forEach(s => {
-// 								storage.setDelivered(s)
-// 							})
-// 						})
-// 					})
-// 				}
-// 			}
-// 		}
-// 	}, timeoutSecs*1000)
-// }
-// tmeApi.on('inline_query', async msg => {
-// 	const data = msg.from
-// 	console.log("data", data)
-// 	const chatId = msg.query
-// 	console.log("chatId", chatId)
-// })
+var timer = {};
+var timeoutSecs = 120;
+var storage = new local_storage_1.LocalStorage(2);
+var tmeApi = new node_telegram_bot_api_1.default((0, utils_1.getEnv)("TLGRM_TKN"), { polling: true });
+// db.authenticate().then(() => console.log("Connected to database")).catch(e => console.log(`DB connections error: ${e}`))
+// db.sync().then()
+tmeApi.setMyCommands([
+    { command: "/start", description: "Подписатся на сигналы" },
+    { command: "/test", description: "Тест вопросов ответов" },
+]);
+tmeApi.on("message", function (message) { return tslib_1.__awaiter(void 0, void 0, void 0, function () {
+    var replyMessageId, req;
+    var _a, _b, _c, _d;
+    return tslib_1.__generator(this, function (_e) {
+        switch (_e.label) {
+            case 0:
+                console.log("message", message);
+                if (message) {
+                    if (message.reply_to_message) {
+                        if (message.reply_to_message.message_id) {
+                            replyMessageId = message.reply_to_message.message_id;
+                            console.log("replyMessageId", replyMessageId);
+                        }
+                        // reply functions
+                    }
+                }
+                if (!(message.text === "/test")) return [3 /*break*/, 2];
+                return [4 /*yield*/, tmeApi.sendMessage(message.chat.id, "Test", keyboards_1.KEYBOARDS.digitalKeyboard)];
+            case 1:
+                req = _e.sent();
+                console.log("req.message_id", req.message_id);
+                tmeApi.on("inline_query", function (qmsg) {
+                    console.log("qmsg", qmsg);
+                });
+                return [2 /*return*/, req];
+            case 2:
+                if (message.text === "/start") {
+                    timer = startPolling();
+                    storage.setUser([message.chat.id.toString()]);
+                    // await User.create({chatId: message.chat.id})
+                    return [2 /*return*/, tmeApi.sendMessage(message.chat.id, "Congrats! Your subscription started")];
+                }
+                if ((_a = message.text) === null || _a === void 0 ? void 0 : _a.includes("new")) {
+                    storage = new local_storage_1.LocalStorage(parseInt((_b = message.text) === null || _b === void 0 ? void 0 : _b.slice(3)));
+                }
+                if ((_c = message.text) === null || _c === void 0 ? void 0 : _c.includes("time")) {
+                    clearInterval(timer);
+                    timeoutSecs = parseInt((_d = message.text) === null || _d === void 0 ? void 0 : _d.slice(4));
+                    timer = startPolling();
+                }
+                if (message.text === "stop") {
+                    clearInterval(timer);
+                    return [2 /*return*/, tmeApi.sendMessage(message.chat.id, "Your subscription cancelled")];
+                }
+                return [2 /*return*/, tmeApi.sendMessage(message.chat.id, "Yes that's right")];
+        }
+    });
+}); });
+function getChats() {
+    return tslib_1.__awaiter(this, void 0, void 0, function () {
+        return tslib_1.__generator(this, function (_a) {
+            return [2 /*return*/, storage.getUsers()]; // User.findAll()
+        });
+    });
+}
+function startPolling() {
+    var _this = this;
+    return setInterval(function () { return tslib_1.__awaiter(_this, void 0, void 0, function () {
+        var chats, signals_1;
+        return tslib_1.__generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, getChats()];
+                case 1:
+                    chats = _a.sent();
+                    if (!chats.length) return [3 /*break*/, 3];
+                    return [4 /*yield*/, storage.getMarketData()
+                        //todo write in db
+                        // check if hawe new signals >> send
+                    ]; //await getFeaturesSignals()
+                case 2:
+                    signals_1 = _a.sent() //await getFeaturesSignals()
+                    ;
+                    //todo write in db
+                    // check if hawe new signals >> send
+                    if (signals_1) {
+                        if (Object.keys(signals_1).length) {
+                            chats.forEach(function (chatId) {
+                                var message = Object.entries(signals_1)
+                                    .filter(function (_a) {
+                                    var data = _a[1];
+                                    return !data.isDelivered;
+                                })
+                                    .map(function (_a) {
+                                    var symbol = _a[0];
+                                    return "".concat(symbol, ": ").concat(signals_1[symbol].priceChangePercent, "%");
+                                })
+                                    .join("\n");
+                                tmeApi.sendMessage(chatId, message).then(function () {
+                                    Object.keys(signals_1).forEach(function (s) {
+                                        storage.setDelivered(s);
+                                    });
+                                });
+                            });
+                        }
+                    }
+                    _a.label = 3;
+                case 3: return [2 /*return*/];
+            }
+        });
+    }); }, timeoutSecs * 1000);
+}
+tmeApi.on("inline_query", function (msg) { return tslib_1.__awaiter(void 0, void 0, void 0, function () {
+    var data, chatId;
+    return tslib_1.__generator(this, function (_a) {
+        data = msg.from;
+        console.log("data", data);
+        chatId = msg.query;
+        console.log("chatId", chatId);
+        return [2 /*return*/];
+    });
+}); });
