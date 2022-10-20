@@ -16,13 +16,25 @@ export class FirebaseService {
     return newUser.id
   }
 
+  async getUser(userId: UserModel["id"]) {
+    const usersCol = collection(this.db, "users")
+    const usersSnapshot = await getDocs(usersCol)
+    const userDocRef = usersSnapshot.docs.find((doc) => doc.data().id === userId)
+    if (userDocRef) {
+      return userDocRef.data() as UserModel
+    } else {
+      console.log("User not found")
+      return false
+    }
+  }
+
   async updateUser(userId: UserModel["id"], newUserData: UserModel) {
     const usersCol = collection(this.db, "users")
     const usersSnapshot = await getDocs(usersCol)
     const userDocRef = usersSnapshot.docs.find((doc) => doc.data().id === userId)
     if (userDocRef) {
-      const updatedUsed = await setDoc(userDocRef.ref, { ...userDocRef.data(), ...newUserData })
-      return updatedUsed
+      await setDoc(userDocRef.ref, { ...userDocRef.data(), ...newUserData })
+      return true
     } else {
       console.log("User not found")
       return false
