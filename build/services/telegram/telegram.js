@@ -133,7 +133,7 @@ function getDenizCalculation(startAmountRub) {
                             rubtry: denizRate,
                             tryusdt: bitexenRate,
                             usdtrub: garantexRate[0].price,
-                            resultRub: new bignumber_js_1.default(startAmountRub).minus(result),
+                            resultRub: result.minus(new bignumber_js_1.default(startAmountRub)),
                         }];
             }
         });
