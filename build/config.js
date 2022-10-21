@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BASE_CURRENCY_AMOUNT_FOR_CALCULATING = exports.CURRENCY_DELIMITER = exports.CONFIG = void 0;
+var keyboards_1 = require("./services/telegram/keyboards");
 exports.CONFIG = {
     binance: {
         apiBaseUrl: "https://api.binance.com",
@@ -31,3 +32,4 @@ exports.CONFIG = {
 };
 exports.CURRENCY_DELIMITER = "/";
 exports.BASE_CURRENCY_AMOUNT_FOR_CALCULATING = 100;
+keyboards_1.TELEGRAM.commands;

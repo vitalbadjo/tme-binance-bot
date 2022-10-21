@@ -1,11 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.firestore = exports.db = void 0;
-var tslib_1 = require("tslib");
-var compat_1 = tslib_1.__importDefault(require("firebase/compat"));
 var lite_1 = require("firebase/firestore/lite");
-var initializeApp = compat_1.default.initializeApp;
+var app_1 = require("firebase/app");
 exports.db = {};
-var firebaseConfig = {};
-var firebaseController = initializeApp(firebaseConfig);
+var firebaseConfig = {
+    apiKey: process.env.FBAPI,
+    authDomain: "tme-bnb.firebaseapp.com",
+    projectId: "tme-bnb",
+    storageBucket: "tme-bnb.appspot.com",
+    messagingSenderId: process.env.FBMSID,
+    appId: process.env.FBAPID,
+};
+var firebaseController = (0, app_1.initializeApp)(firebaseConfig);
 exports.firestore = (0, lite_1.getFirestore)(firebaseController);

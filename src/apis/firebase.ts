@@ -1,12 +1,5 @@
 import { getFirestore } from "firebase/firestore/lite"
-import firebase from "firebase/compat"
-// import "firebase/database"
-
-export type ChatUserData = {
-  chatId: number
-}
-
-export type FirebaseDB = Record<number, any>
+import { initializeApp } from "firebase/app"
 
 export const db = {}
 
@@ -18,5 +11,5 @@ const firebaseConfig = {
   messagingSenderId: process.env.FBMSID,
   appId: process.env.FBAPID,
 }
-const firebaseController = firebase.initializeApp(firebaseConfig)
+const firebaseController = initializeApp(firebaseConfig)
 export const firestore = getFirestore(firebaseController)

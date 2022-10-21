@@ -1,3 +1,5 @@
+import { TELEGRAM } from "./services/telegram/keyboards"
+
 export const CONFIG = {
   binance: {
     apiBaseUrl: "https://api.binance.com",
@@ -29,3 +31,5 @@ export const CONFIG = {
 
 export const CURRENCY_DELIMITER = "/"
 export const BASE_CURRENCY_AMOUNT_FOR_CALCULATING = 100
+
+TELEGRAM.commands

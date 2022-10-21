@@ -1,11 +1,11 @@
 import axios from "axios"
 import { CONFIG } from "../config"
 
-export async function getPredefinedDataSheet(): Promise<GetSheetsResponse> {
+export async function getPredefinedDataSheet(page: "Sheet1" | "Sheet2" = "Sheet1"): Promise<GetSheetsResponse> {
   const response = await axios
     .create()
     .get(
-      `${CONFIG.sheets.apiBaseUrl}/spreadsheets/${process.env.GID}/values/${encodeURI("Sheet1!B5:K20")}?key=${
+      `${CONFIG.sheets.apiBaseUrl}/spreadsheets/${process.env.GID}/values/${encodeURI(`${page}!B5:K20`)}?key=${
         process.env.GKEY
       }`
     )
@@ -26,10 +26,22 @@ export async function getPredefinedDataSheet(): Promise<GetSheetsResponse> {
   }, {})
   return jsonReady
 }
-type GetSheetsResponse = Record<string, Record<string, string | number>>
+type BanksRus =
+  | "rosbank"
+  | "tinkoff"
+  | "raiffaisen"
+  | "bks"
+  | "uralsib"
+  | "rshb"
+  | "reneissance"
+  | "deniz"
+  | "korona"
+  | "turLocalExch"
+type BanksRusComiisions = "korrPercent" | "korrRub" | "swiftPercent" | "swiftUsd" | "delayDays" | "iban" | "dzh"
+type GetSheetsResponse = Partial<Record<BanksRus, Record<BanksRusComiisions, string | number>>>
 type GetSheetsResponseRaw = {
   range: string
   majorDimension: string
-  values: (string | number)[][]
+  values: (BanksRus | BanksRusComiisions | "null")[][]
 }
 // Sheet1%21A1%3AF10

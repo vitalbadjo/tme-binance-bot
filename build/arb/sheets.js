@@ -4,14 +4,15 @@ exports.getPredefinedDataSheet = void 0;
 var tslib_1 = require("tslib");
 var axios_1 = tslib_1.__importDefault(require("axios"));
 var config_1 = require("../config");
-function getPredefinedDataSheet() {
+function getPredefinedDataSheet(page) {
+    if (page === void 0) { page = "Sheet1"; }
     return tslib_1.__awaiter(this, void 0, void 0, function () {
         var response, data, jsonReady;
         return tslib_1.__generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, axios_1.default
                         .create()
-                        .get("".concat(config_1.CONFIG.sheets.apiBaseUrl, "/spreadsheets/").concat(process.env.GID, "/values/").concat(encodeURI("Sheet1!B5:K20"), "?key=").concat(process.env.GKEY))];
+                        .get("".concat(config_1.CONFIG.sheets.apiBaseUrl, "/spreadsheets/").concat(process.env.GID, "/values/").concat(encodeURI("".concat(page, "!B5:K20")), "?key=").concat(process.env.GKEY))];
                 case 1:
                     response = _a.sent();
                     data = response.data;
