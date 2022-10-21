@@ -102,7 +102,7 @@ async function getDenizCalculation(startAmountRub: string = "1000000") {
     rubtry: denizRate,
     tryusdt: bitexenRate,
     usdtrub: garantexRate[0].price,
-    resultRub: new BigNumber(startAmountRub).minus(result),
+    resultRub: result.minus(new BigNumber(startAmountRub)),
   }
 }
 
